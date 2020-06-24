@@ -32,22 +32,22 @@ def apply_rule(rid, rules, df):
 number_pattern = re.compile('\d+')
 def calculate_accuracy(df):
     # To complement the defect that the stanfordnlp dependency parsing does not identify "mp3" but identify "mp" only.
-    correct_targets_dup = list([number_pattern.sub(' ', item).strip() for sublist in df['target'].values for item in sublist if item != ''])
-    predicted_targets_dup = list([number_pattern.sub(' ', item).strip() for sublist in df['extracted_targets'].values for item in sublist if item != ''])
+    correct_targets_mul = list([number_pattern.sub(' ', item).strip() for sublist in df['target'].values for item in sublist if item != ''])
+    predicted_targets_mul = list([number_pattern.sub(' ', item).strip() for sublist in df['extracted_targets'].values for item in sublist if item != ''])
     cnt = 0
-    for item in correct_targets_dup:
+    for item in correct_targets_mul:
         try: 
-            predicted_targets_dup.remove(item)
+            predicted_targets_mul.remove(item)
             cnt += 1
         except: pass
-    dup_acc = cnt / len(correct_targets_dup)
-    print('Average accuracy (duplicated targets): %.2f' % dup_acc)
+    mul_acc = cnt / len(correct_targets_mul)
+    print('Average accuracy (based on multiple occurences): %.2f' % mul_acc)
     
-    correct_targets_unique = set(correct_targets_dup)
-    predicted_targets_unique = set(predicted_targets_dup)
-    uniq_acc = len([item for item in predicted_targets_unique if item in correct_targets_unique]) / len(correct_targets_unique)
-    print('Average accuracy (unique targets): %.2f' % uniq_acc)
-    return dup_acc, uniq_acc
+    correct_targets_dis = set([number_pattern.sub(' ', item).strip() for sublist in df['target'].values for item in sublist if item != ''])
+    predicted_targets_dis = set([number_pattern.sub(' ', item).strip() for sublist in df['extracted_targets'].values for item in sublist if item != ''])
+    dis_acc = len([item for item in predicted_targets_dis if item in correct_targets_dis]) / len(correct_targets_dis)
+    print('Average accuracy (based on distinct occurences): %.2f' % dis_acc)
+    return mul_acc, dis_acc
     
 def main():
     rules = Rules()
@@ -60,10 +60,10 @@ def main():
         print('Apply %s..' % rid)
         num_ = apply_rule(rid, rules, df)
         
-        dup_acc, uniq_acc = calculate_accuracy(df)
+        mul_acc, dis_acc = calculate_accuracy(df)
         
         # Save
-        filepath = os.path.join(output_dir, '%s_Cov%d_DupAcc%.2f_UniqAcc%.2f.csv' % (rid, num_, dup_acc, uniq_acc))
+        filepath = os.path.join(output_dir, '%s_Cov%d_MulAcc%.2f_DisAcc%.2f.csv' % (rid, num_, mul_acc, dis_acc))
         df.to_csv(filepath, index = False, encoding='utf-8-sig')
         print('Created %s' % filepath)
 
