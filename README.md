@@ -1,14 +1,14 @@
 # domain-specific target extraction
 
 ## Double propagation rules
-* O: opinion words 
+* O: opinion words
     - POS tags for O: JJ, JJR, JJS
 * T: targets
     - POS tags for T: NN, NNS
 * O|T-Dep: Dependency relation
     - {MR}: mod, pnmod, subj, s, obj, obj2, desc
     - {CONJ}: conj
-<img src="assets/R11.png" height = "450"></img>
+<img src="assets/R11.png"></img>
 
 ## Reference
 * Double propagation rules
