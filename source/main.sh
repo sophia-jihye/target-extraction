@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICESES=0 python -W ignore main.py
