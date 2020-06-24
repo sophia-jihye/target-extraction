@@ -54,5 +54,18 @@ class Rules:
 
         if len(new_targets) == 0:
             return '-'
+        
+        # This is for expanding the opinion targets from single word to phrases (e.g., battery life)
+        to_be_deleted, to_be_added = set(), set()
+        for target in new_targets:
+            comp_child_nodes = [nodes[i] for i in range(len(nodes)) if nodes[i].governor in lemma2idx[target] and nodes[i].dep=='compound' and nodes[i].pos in self.NN]
+            if len(comp_child_nodes) > 0:
+                to_be_deleted.add(target)
+                for child_node in comp_child_nodes:
+                    to_be_added.add(' '.join([child_node.lemma, target]))
+        for item in to_be_deleted:
+            new_targets.remove(item)
+        for item in to_be_added:
+            new_targets.add(item)
         return list(new_targets)
     
