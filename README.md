@@ -1,14 +1,27 @@
 # domain-specific target extraction
 
+
 ## Double propagation rules
 * O: opinion words
     - POS tags for O: JJ, JJR, JJS
 * T: targets
     - POS tags for T: NN, NNS
+* H: any word
 * O|T-Dep: Dependency relation
     - {MR}: mod, pnmod, subj, s, obj, obj2, desc
     - {CONJ}: conj
-<img src="assets/R11.png"></img>
+
+##### Rule11: `O(JJ) ~ MR <- T(NN)` or `O(JJ) -> MR ~ T`
+- The *photo quality* is amazing.
+- The *software* of the player is not easy-to-use.
+- The phone has a good *screen*.
+- I am not pleased with the *picture quality*. 
+<img src="assets/R11.png"></img><img src="assets/R11a.png"></img><img src="assets/R11b.png"></img><img src="assets/R11c.png"></img>
+
+##### Rule12: `O(JJ) ~ MR <- H -> MR ~ T(NN)`
+- The *iPod* is the best mp3 player.
+- The camera has a wonderful set of *features*. 
+<img src="assets/R12.png"></img><img src="assets/R12a.png"></img>
 
 ## Reference
 * Double propagation rules

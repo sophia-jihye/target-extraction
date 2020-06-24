@@ -1,6 +1,5 @@
-import os, time
+import os, time, re
 from config import parameters
-import numpy as np
 import pandas as pd
 from Rules import Rules
 from tqdm import tqdm
@@ -10,33 +9,64 @@ data_filepath = parameters.data_filepath
 output_dir = parameters.output_dir
 output_time_txt_filepath = parameters.output_time_txt_filepath
 
-def accuracy(extracted_targets, targets):
-    if extracted_targets!='-' and len(targets)!=0:
-        return len([item for item in extracted_targets if item in targets]) / len(targets) 
-    else:
-        return '-'
-
-def apply_R11(rules, df):
-    df['extracted_targets'] = df.progress_apply(lambda x: rules.extract_targets_R11(*rules.parse_document(x['content'])), axis=1)
-    df['R11_applied'] = df.progress_apply(lambda x: 1 if x['extracted_targets']!='-' else 0, axis=1)
+convert_carefully = {'mp':'mp3'}
+def extract_targets_from_document(rid, rules, document, extracted_targets):
+    doc = rules.nlp(document)
+    for sentence in doc.sentences:
+        if rid == 'R11':
+            extracted_targets.update(rules.extract_targets_R11(*rules.parse_sentence(sentence)))
+        elif rid == 'R12':
+            extracted_targets.update(rules.extract_targets_R12(*rules.parse_sentence(sentence)))
     
-    df['accuracy'] = df.progress_apply(lambda x: accuracy( x['extracted_targets'],  x['target']), axis=1)
-    num_ = len(df[df['R11_applied']==1])
-    acc_ = np.mean(df[df['accuracy']!='-']['accuracy'])
-    print('Number of sentences which R11 applies: %d [%.2f]' % (num_, num_/len(df)))
-    print('Average accuracy: %.2f' % acc_)
+    if len(extracted_targets) == 0: return '-'
+    return [convert_carefully[item] if item in convert_carefully.keys() else item for item in list(extracted_targets)]
+    
+def apply_rule(rid, rules, df):
+    df['extracted_targets'] = df.progress_apply(lambda x: extract_targets_from_document(rid, rules, x['content'], x['extracted_targets']), axis=1)
+    df['%s_applied'%rid] = df.progress_apply(lambda x: 1 if x['extracted_targets']!='-' else 0, axis=1)
+    
+    num_ = len(df[df['%s_applied'%rid]==1])
+    print('Number of sentences which %s applies: %d [%.2f]' % (rid, num_, num_/len(df)))
+    return num_
 
-    # Save
-    filepath = os.path.join(output_dir, 'R11_Cov%d_Acc%.2f.csv' % (num_, acc_))
-    df.to_csv(filepath, index = False, encoding='utf-8-sig')
-    print('Created %s' % filepath)
-
+number_pattern = re.compile('\d+')
+def calculate_accuracy(df):
+    # To complement the defect that the stanfordnlp dependency parsing does not identify "mp3" but identify "mp" only.
+    correct_targets_dup = list([number_pattern.sub(' ', item).strip() for sublist in df['target'].values for item in sublist if item != ''])
+    predicted_targets_dup = list([number_pattern.sub(' ', item).strip() for sublist in df['extracted_targets'].values for item in sublist if item != ''])
+    cnt = 0
+    for item in correct_targets_dup:
+        try: 
+            predicted_targets_dup.remove(item)
+            cnt += 1
+        except: pass
+    dup_acc = cnt / len(correct_targets_dup)
+    print('Average accuracy (duplicated targets): %.2f' % dup_acc)
+    
+    correct_targets_unique = set(correct_targets_dup)
+    predicted_targets_unique = set(predicted_targets_dup)
+    uniq_acc = len([item for item in predicted_targets_unique if item in correct_targets_unique]) / len(correct_targets_unique)
+    print('Average accuracy (unique targets): %.2f' % uniq_acc)
+    return dup_acc, uniq_acc
+    
 def main():
     rules = Rules()
-    df = pd.read_json(data_filepath)
     
-    print('Apply R11..')
-    apply_R11(rules, df)
+    # Check each rule of Type1 rules
+    for rid in ['R11', 'R12']:
+        df = pd.read_json(data_filepath)
+        df['extracted_targets'] = df.progress_apply(lambda x: set(), axis=1)
+
+        print('Apply %s..' % rid)
+        num_ = apply_rule(rid, rules, df)
+        
+        dup_acc, uniq_acc = calculate_accuracy(df)
+        
+        # Save
+        filepath = os.path.join(output_dir, '%s_Cov%d_DupAcc%.2f_UniqAcc%.2f.csv' % (rid, num_, dup_acc, uniq_acc))
+        df.to_csv(filepath, index = False, encoding='utf-8-sig')
+        print('Created %s' % filepath)
+
     
     
 if __name__ == '__main__':
