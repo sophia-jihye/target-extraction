@@ -11,30 +11,36 @@
     - {MR}: mod, pnmod, subj, s, obj, obj2, desc
     - {CONJ}: conj
 
-##### Rule11: `O(JJ) ~ MR <- T(NN)` or `O(JJ) -> MR ~ T`
+#### Type 1 rules (given a set of seed opinion words -> new targets): R11, R12
+> using opinion words to extract aspects (based on some dependency relations between them), **given a set of of seed opinion words a priori**. For example, specific rules that are instantiations of rule patterns **$$R_{11}$$ and $$R_{12}$$** are type 1 rules.
+
+##### R11: `O(JJ) ~ MR <- T(NN)` or `O(JJ) -> MR ~ T`
 - The phone has a good **screen**.
 - The **photo quality** is amazing.
 - The **software** of the player is not easy-to-use.
 - I am not pleased with the **picture quality**. 
 <img src="assets/R11.png"></img><img src="assets/R11a.png"></img><img src="assets/R11b.png"></img><img src="assets/R11c.png"></img>
 
-##### Rule12: `O(JJ) ~ MR <- H -> MR ~ T(NN)`
+##### R12: `O(JJ) ~ MR <- H -> MR ~ T(NN)`
 - The **iPod** is the best mp3 player.
 - The camera has a wonderful set of **features**. 
 <img src="assets/R12.png"></img><img src="assets/R12a.png"></img>
 
+#### Type 2 rules (using known targets -> new targets): R31, R32
+> **using known aspects** to extract new aspects. The known aspects are extracted in the previous propagation. For example, specific rules that are instantiations of rule patterns **$$R_{31}$$ and $$R_{32}$$** are type 2 rules.
+
 ## Reference
 * Double propagation rules
-    - https://github.com/NinaTian98369/Double-propagation/blob/master/extract_targets_dp_new_final.py
-    - https://github.com/opener-project/double-propagation-target-generation/tree/master/src/main/java/org/openerproject/double_propagation2/algorithm/rules
-    - https://github.com/opener-project/double-propagation-target-generation/blob/master/src/main/java/org/openerproject/double_propagation2/model/RelationTypes.java
+    - [NinaTian98369](https://github.com/NinaTian98369/Double-propagation/blob/master/extract_targets_dp_new_final.py)
+    - [opener-project (Java)](https://github.com/opener-project/double-propagation-target-generation/tree/master/src/main/java/org/openerproject/double_propagation2/algorithm/rules)
+    - [opener-project (Java)](https://github.com/opener-project/double-propagation-target-generation/blob/master/src/main/java/org/openerproject/double_propagation2/model/RelationTypes.java)
 
 * Customer review dataset
-    - https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#datasets
+    - [uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#datasets)
 * Customer review dataset parser (csv -> json)
-    - https://github.com/chakki-works/chazutsu/blob/7eea1f6b441db62ec76f64da1c041cb931746907/chazutsu/datasets/customer_review.py
+    - [chakki-works](https://github.com/chakki-works/chazutsu/blob/7eea1f6b441db62ec76f64da1c041cb931746907/chazutsu/datasets/customer_review.py)
 * Sentiment lexicon for customer reviews (Liu, 2004)
-    - https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon
+    - [uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon)
 
 ## Related papers
 * Qiu, G., Liu, B., Bu, J., & Chen, C. (2011). Opinion word expansion and target extraction through double propagation. Computational linguistics, 37(1), 9-27.

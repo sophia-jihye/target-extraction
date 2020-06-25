@@ -9,7 +9,6 @@ data_filepath = parameters.data_filepath
 output_dir = parameters.output_dir
 output_time_txt_filepath = parameters.output_time_txt_filepath
 
-convert_carefully = {'mp':'mp3'}
 def extract_targets_from_document(rid, rules, document, extracted_targets):
     doc = rules.nlp(document)
     for sentence in doc.sentences:
@@ -17,18 +16,18 @@ def extract_targets_from_document(rid, rules, document, extracted_targets):
             extracted_targets.update(rules.extract_targets_R11(*rules.parse_sentence(sentence)))
         elif rid == 'R12':
             extracted_targets.update(rules.extract_targets_R12(*rules.parse_sentence(sentence)))
-    
-    if len(extracted_targets) == 0: return '-'
-    return [convert_carefully[item] if item in convert_carefully.keys() else item for item in list(extracted_targets)]
+    return extracted_targets
     
 def apply_rule(rid, rules, df):
     df['extracted_targets'] = df.progress_apply(lambda x: extract_targets_from_document(rid, rules, x['content'], x['extracted_targets']), axis=1)
-    df['%s_applied'%rid] = df.progress_apply(lambda x: 1 if x['extracted_targets']!='-' else 0, axis=1)
-    
-    num_ = len(df[df['%s_applied'%rid]==1])
-    print('Number of sentences which %s applies: %d [%.2f]' % (rid, num_, num_/len(df)))
-    return num_
 
+def calculate_coverage(df):
+    df['rules_applied'] = df.apply(lambda x: 1 if len(x['extracted_targets'])>0 else 0, axis=1)
+    num_ = len(df[df['rules_applied']==1])
+    coverage = num_/len(df)
+    print('Coverage: %.2f [%d]' % (coverage, num_))
+    return coverage
+    
 number_pattern = re.compile('\d+')
 def calculate_accuracy(df):
     # To complement the defect that the stanfordnlp dependency parsing does not identify "mp3" but identify "mp" only.
@@ -48,26 +47,33 @@ def calculate_accuracy(df):
     dis_acc = len([item for item in predicted_targets_dis if item in correct_targets_dis]) / len(correct_targets_dis)
     print('Average accuracy (based on distinct occurences): %.2f' % dis_acc)
     return mul_acc, dis_acc
-    
+
+def check_result(title, df):
+    coverage = calculate_coverage(df) 
+    mul_acc, dis_acc = calculate_accuracy(df)
+
+    # Save
+    filepath = os.path.join(output_dir, '[%s]Cov%.2f_MulAcc%.2f_DisAcc%.2f.csv' % (title, coverage, mul_acc, dis_acc))
+    df.to_csv(filepath, index = False, encoding='utf-8-sig')
+    print('Created %s' % filepath)
+
 def main():
     rules = Rules()
     
     # Check each rule of Type1 rules
-    for rid in ['R11', 'R12']:
-        df = pd.read_json(data_filepath)
-        df['extracted_targets'] = df.progress_apply(lambda x: set(), axis=1)
-
-        print('Apply %s..' % rid)
-        num_ = apply_rule(rid, rules, df)
+    for rid_set in ['R11+R12', 'R12+R11']:
+        raw_df = pd.read_json(data_filepath)
         
-        mul_acc, dis_acc = calculate_accuracy(df)
+        for filename in raw_df['filename'].unique():
+            df = raw_df[raw_df['filename']==filename]
         
-        # Save
-        filepath = os.path.join(output_dir, '%s_Cov%d_MulAcc%.2f_DisAcc%.2f.csv' % (rid, num_, mul_acc, dis_acc))
-        df.to_csv(filepath, index = False, encoding='utf-8-sig')
-        print('Created %s' % filepath)
+            df['extracted_targets'] = df.apply(lambda x: set(), axis=1)
+            for idx, rid in enumerate(rid_set.split('+')):
+                print('[%s %s] Applying %s..' % (filename, rid_set, rid))
+                apply_rule(rid, rules, df)
 
-    
+                if idx == 0: check_result('_'.join([rid_set, str(idx)]), df)   # Temp: rid_set이 2개의 rid를 가지고있을 때
+            check_result(' '.join([filename, rid_set]), df)
     
 if __name__ == '__main__':
     start = time.time()
