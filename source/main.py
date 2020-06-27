@@ -93,7 +93,9 @@ def create_report(rule_names, filenames, measures, measure_types, val_dict):
     measure_types.sort(reverse=True)
     f = open(output_report_csv_filepath, 'w', encoding='utf-8-sig', newline='')
     wr = csv.writer(f)  
-    wr.writerow(['domain', 'measure', 'type', rule_names])
+    columns = ['domain', 'measure', 'type']
+    columns.extend(rule_names)
+    wr.writerow(columns)
     for filename in filenames:
         for measure in measures:
             for measure_type in measure_types:

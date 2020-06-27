@@ -2,13 +2,13 @@
 
 ## Evaluation measures
 * Precision and recall based on multiple occurences
-<img src="Mul_Precision,Recall.png"></img>
+<img src="assets/Mul_Precision,Recall.png"></img>
 
 * Precision and recall based on distinct occurences
-<img src="Dis_Precision,Recall.png"></img>
+<img src="assets/Dis_Precision,Recall.png"></img>
 
 * F1 score
-<img src="F1.png"></img>
+<img src="assets/F1.png"></img>
 
 ## Double propagation rules
 * O: opinion words
