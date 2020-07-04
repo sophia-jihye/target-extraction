@@ -3,8 +3,7 @@ import networkx as nx
 
 Node = namedtuple("Node", ["idx", "token", "pos", "dep", "governor"])
 class DependencyGraphHandler:
-    #def __init__(self):
-        
+    
     def governor2idx(self, old_idx):
         if old_idx == 0:
             return None
@@ -40,7 +39,7 @@ class DependencyGraphHandler:
         root_words = [nodes[i].token for i in indices if nodes[i].governor not in indices]
         return root_words[0]   
     
-    def print_(self, sentence_from_doc, o_word, t_word):
+    def get_pattern(self, sentence_from_doc, o_word, t_word):
         token2idx, nodes = self.parse_sentence(sentence_from_doc)
 
         edges = []
