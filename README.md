@@ -1,24 +1,8 @@
 # domain-specific target extraction
 
-## Evaluation measures
-* Precision and recall based on multiple occurences
-<img src="assets/Mul_Precision,Recall.png"></img>
+## `source`: Shortest path in dependency graph
 
-* Precision and recall based on distinct occurences
-<img src="assets/Dis_Precision,Recall.png"></img>
-
-* F1 score
-<img src="assets/F1.png"></img>
-
-## Double propagation rules
-* O: opinion words
-    - POS tags for O: JJ, JJR, JJS
-* T: targets
-    - POS tags for T: NN, NNS
-* H: any word
-* O|T-Dep: Dependency relation
-    - {MR}: mod, pnmod, subj, s, obj, obj2, desc
-    - {CONJ}: conj
+## `source_archive/source_dp`: Double propagation rules 
 
 #### Type 1 rules (given a set of seed opinion words -> new targets): R11, R12
 > using opinion words to extract aspects (based on some dependency relations between them), **given a set of of seed opinion words a priori**. For example, specific rules that are instantiations of rule patterns **R11 and R12** are type 1 rules.
@@ -38,7 +22,27 @@
 #### Type 2 rules (using known targets -> new targets): R31, R32
 > **using known aspects** to extract new aspects. The known aspects are extracted in the previous propagation. For example, specific rules that are instantiations of rule patterns **R31 and R32** are type 2 rules.
 
-## Reference
+### Dataset annotation
+* O: opinion words
+    - POS tags for O: JJ, JJR, JJS
+* T: targets
+    - POS tags for T: NN, NNS
+* H: any word
+* O|T-Dep: Dependency relation
+    - {MR}: mod, pnmod, subj, s, obj, obj2, desc
+    - {CONJ}: conj
+
+### Evaluation measures
+* Precision and recall based on multiple occurences
+    - <img src="assets/Mul_Precision,Recall.png"></img>
+
+* Precision and recall based on distinct occurences
+    - <img src="assets/Dis_Precision,Recall.png"></img>
+
+* F1 score
+    - <img src="assets/F1.png"></img>
+
+### Reference
 * Double propagation rules
     - [NinaTian98369](https://github.com/NinaTian98369/Double-propagation/blob/master/extract_targets_dp_new_final.py)
     - [opener-project (Java)](https://github.com/opener-project/double-propagation-target-generation/tree/master/src/main/java/org/openerproject/double_propagation2/algorithm/rules)
@@ -51,7 +55,7 @@
 * Sentiment lexicon for customer reviews (Liu, 2004)
     - [uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon)
 
-## Related papers
+### Related papers
 * Qiu, G., Liu, B., Bu, J., & Chen, C. (2011). Opinion word expansion and target extraction through double propagation. Computational linguistics, 37(1), 9-27.
 * Liu, Q., Gao, Z., Liu, B., & Zhang, Y. (2015, June). Automated rule selection for aspect extraction in opinion mining. In Twenty-Fourth International Joint Conference on Artificial Intelligence.
 
