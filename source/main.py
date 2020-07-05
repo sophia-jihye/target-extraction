@@ -15,8 +15,15 @@ output_error_csv_filepath = parameters.output_error_csv_filepath
 def process_targets(content, targets):
     processed_targets = []
     for target in targets:
+        candidate_token = None
         for token in content.split():
-            if target in token: processed_targets.append(token)
+            if target in token: candidate_token = token.replace('.','')
+            if target == token: 
+                candidate_token = token
+                break
+        if candidate_token is not None: processed_targets.append(candidate_token)
+    
+    processed_targets = [item for item in processed_targets if item != '']
     return list(set(processed_targets))
 
 opinion_word_lexicon = [item for sublist in pd.read_json(lexicon_filepath).values for item in sublist]
@@ -40,10 +47,12 @@ def extract_pattern(df, pattern_counter, err_list, dependency_handler):
                 if o_word not in flattened_string or t_word not in flattened_string:
                     continue
 
-                try: pattern_counter['-'.join([dep_rel for token, pos, dep_rel in dependency_handler.get_pattern(sentence_from_doc, o_word, t_word) if dep_rel != 'root'])] += 1
+                try: 
+                    extracted_patterns = dependency_handler.get_pattern(sentence_from_doc, o_word, t_word)
+                    pattern_counter['-'.join([dep_rel for token, pos, dep_rel in extracted_patterns if dep_rel != 'root'])] += 1
                 except: 
-                    err_list.append([row['content'], o_word, t_word, row['opinion_words'], row['target']])
-                if cnt % 100 == 0: print('[%dth] Extracting patterns..' % (cnt))
+                    err_list.append([row['content'], o_word, t_word, row['opinion_words'], row['targets'], row['target']])
+                if cnt % 100 == 0: print('[%04dth] Extracting patterns..' % (cnt))
                 cnt += 1
 
 def save_results(pattern_counter, err_list):
@@ -53,7 +62,7 @@ def save_results(pattern_counter, err_list):
     pattern_df.to_csv(filepath, index = False, encoding='utf-8-sig')
     print('Created %s' % filepath)
     
-    err_df = pd.DataFrame(err_list, columns =['content', 'current_opinion_word', 'current_target_word', 'opinion_words', 'targets'])  
+    err_df = pd.DataFrame(err_list, columns =['content', 'current_opinion_word', 'current_target_word', 'opinion_words', 'targets', 'original_targets'])  
     filepath = output_error_csv_filepath % len(err_df)
     err_df.to_csv(filepath, index = False, encoding='utf-8-sig')
     print('Created %s' % filepath)
