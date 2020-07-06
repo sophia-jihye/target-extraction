@@ -6,7 +6,6 @@ from DependencyGraph import DependencyGraph
 class PatternExtractor:
     def __init__(self):
         self.special_char_pattern = re.compile('([,.]+.?\d*)')
-        self.opinion_word_lexicon = [item for sublist in pd.read_json(parameters.lexicon_filepath).values for item in sublist]
         self.nlp = stanfordnlp.Pipeline()
         
     def process_targets(self, content, targets):
@@ -32,13 +31,6 @@ class PatternExtractor:
         processed_targets = [item for item in processed_targets if item != '']
         return list(set(processed_targets))
     
-    def match_opinion_words(self, content):
-        opinion_words = []
-        for opinion in self.opinion_word_lexicon:
-            for token in content.split():
-                if token == opinion: opinion_words.append(token)
-        return list(set(opinion_words))
-    
     def sentence_contains_token(self, word_objects, o_word, t_word):
         flattened_string = ''.join([word_objects[i].text for i in range(len(word_objects))])
         if o_word not in flattened_string or t_word not in flattened_string:
@@ -63,6 +55,6 @@ class PatternExtractor:
                         parse_error = False
                     except: parse_error = True
                         
-                    err_list.append([row['content'], o_word, t_word, parse_error, row['opinion_words'], row['targets'], row['target']])
+                    err_list.append([row['content'], o_word, t_word, parse_error, row['opinion_words'], row['targets'], row['raw_targets']])
                     if cnt % 100 == 0: print('[%04dth] Extracting patterns..' % (cnt))
                     cnt += 1

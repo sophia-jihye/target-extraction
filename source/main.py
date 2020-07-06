@@ -8,10 +8,18 @@ from tqdm import tqdm
 tqdm.pandas()
 
 data_filepath = parameters.data_filepath
+lexicon_filepath = parameters.lexicon_filepath
 output_time_txt_filepath = parameters.output_time_txt_filepath
 output_pattern_csv_filepath = parameters.output_pattern_csv_filepath
 output_error_csv_filepath = parameters.output_error_csv_filepath
-                
+
+def match_opinion_words(content, opinion_word_lexicon):
+    opinion_words = []
+    for opinion in opinion_word_lexicon:
+        for token in content.split():
+            if token == opinion: opinion_words.append(token)
+    return list(set(opinion_words))
+
 def save_extracted_pattern_results(pattern_counter, err_list):
     pattern_list = [tup for tup in pattern_counter.items()]
     pattern_df = pd.DataFrame(pattern_list, columns =['pattern', 'count'])  
@@ -25,8 +33,7 @@ def save_extracted_pattern_results(pattern_counter, err_list):
     print('Created %s' % filepath)
 
 def pattern_extraction(df, pattern_extractor, dependency_handler):
-    df['targets'] = df.apply(lambda x: pattern_extractor.process_targets(x['content'], x['target']), axis=1) 
-    df['opinion_words'] = df.progress_apply(lambda x: pattern_extractor.match_opinion_words(x['content']), axis=1)
+    df['targets'] = df.apply(lambda x: pattern_extractor.process_targets(x['content'], x['raw_targets']), axis=1) 
     
     pattern_counter, err_list = defaultdict(int), list()
     pattern_extractor.extract_patterns(df, pattern_counter, err_list, dependency_handler)
@@ -36,6 +43,9 @@ def pattern_extraction(df, pattern_extractor, dependency_handler):
     
 def main():
     df = pd.read_json(data_filepath)
+    opinion_word_lexicon = [item for sublist in pd.read_json(lexicon_filepath).values for item in sublist]
+    df['opinion_words'] = df.progress_apply(lambda x: match_opinion_words(x['content'], opinion_word_lexicon), axis=1)
+    
     pattern_extractor = PatternExtractor()
     dependency_handler = DependencyGraphHandler()
     
