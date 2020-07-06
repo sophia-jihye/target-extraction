@@ -2,10 +2,11 @@ from collections import namedtuple, defaultdict
 import networkx as nx
 
 Node = namedtuple("Node", ["idx", "token", "pos", "dep", "governor"])
-class DependencyGraph():
+class DependencyGraph:
     def __init__(self, sentence_from_doc):
+        self.word_objects = sentence_from_doc.words
         self.token2idx, self.nodes = self.parse_sentence(sentence_from_doc)
-        self.edges, self.graph = self.create_graph(sentence_from_doc)
+        self.edges, self.graph, self.token2tagdep = self.create_graph(sentence_from_doc)
     
     def governor2idx(self, old_idx):
         if old_idx == 0:
@@ -29,4 +30,4 @@ class DependencyGraph():
             if item[0].text.lower() != 'root':
                 edges.append((item[0].text, item[2].text))
         graph = nx.Graph(edges)
-        return edges, graph
+        return edges, graph, token2tagdep
