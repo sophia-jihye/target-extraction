@@ -2,6 +2,33 @@
 
 ## `source`: Shortest path in dependency graph
 
+### References
+* Customer review dataset & Sentiment lexicon for customer reviews
+    - Qiu, G., Liu, B., Bu, J., & Chen, C. (2011). Opinion word expansion and target extraction through double propagation. Computational linguistics, 37(1), 9-27.
+    - [Customer review dataset: uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#datasets)
+    - [Customer review dataset parser (csv -> json): chakki-works](https://github.com/chakki-works/chazutsu/blob/7eea1f6b441db62ec76f64da1c041cb931746907/chazutsu/datasets/customer_review.py)
+    - [Sentiment lexicon for customer reviews: uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon)
+
+* Learning syntactic patterns from dependency graphs
+    - Hassan, Mohsen, et al. "Extracting disease-symptom relationships by learning syntactic patterns from dependency graphs." 2015.
+
+* Evaluation measures 
+    - Liu, Q., Gao, Z., Liu, B., & Zhang, Y. (2015, June). Automated rule selection for aspect extraction in opinion mining. In Twenty-Fourth International Joint Conference on Artificial Intelligence.
+
+### Evaluation measures
+* Precision and recall based on multiple occurences
+    > In a dataset, an important aspect often occurs many times, e.g., the aspect “picture” occurred 10 times in a set of camera reviews. If any occurrence of “picture” is extracted, then all occur- rences of “picture” are considered extracted, i.e., 10. If none of its occurrences is extracted, it is considered as 10 losses.
+    
+    - <img src="assets/Mul_Precision,Recall.png"></img><img src="assets/Mul_Precision,Recall2.png"></img>
+
+* Precision and recall based on distinct occurence
+    > if any occurrence of “picture” is extracted, it is considered as one extrac- tion. If none is extracted, it is considered as one loss.
+    
+    - <img src="assets/Dis_Precision,Recall.png"></img><img src="assets/Dis_Precision,Recall2.png"></img>
+
+* F1 score
+    - <img src="assets/F1.png"></img>
+    
 ## `source_archive/source_dp`: Double propagation rules 
 
 #### Type 1 rules (given a set of seed opinion words -> new targets): R11, R12
@@ -22,7 +49,7 @@
 #### Type 2 rules (using known targets -> new targets): R31, R32
 > **using known aspects** to extract new aspects. The known aspects are extracted in the previous propagation. For example, specific rules that are instantiations of rule patterns **R31 and R32** are type 2 rules.
 
-### Dataset annotation
+### Annotation
 * O: opinion words
     - POS tags for O: JJ, JJR, JJS
 * T: targets
@@ -32,32 +59,11 @@
     - {MR}: mod, pnmod, subj, s, obj, obj2, desc
     - {CONJ}: conj
 
-### Evaluation measures
-* Precision and recall based on multiple occurences
-    - <img src="assets/Mul_Precision,Recall.png"></img>
-
-* Precision and recall based on distinct occurences
-    - <img src="assets/Dis_Precision,Recall.png"></img>
-
-* F1 score
-    - <img src="assets/F1.png"></img>
-
-### Reference
+### References
 * Double propagation rules
     - [NinaTian98369](https://github.com/NinaTian98369/Double-propagation/blob/master/extract_targets_dp_new_final.py)
     - [opener-project (Java)](https://github.com/opener-project/double-propagation-target-generation/tree/master/src/main/java/org/openerproject/double_propagation2/algorithm/rules)
     - [opener-project (Java)](https://github.com/opener-project/double-propagation-target-generation/blob/master/src/main/java/org/openerproject/double_propagation2/model/RelationTypes.java)
-
-* Customer review dataset
-    - [uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#datasets)
-* Customer review dataset parser (csv -> json)
-    - [chakki-works](https://github.com/chakki-works/chazutsu/blob/7eea1f6b441db62ec76f64da1c041cb931746907/chazutsu/datasets/customer_review.py)
-* Sentiment lexicon for customer reviews (Liu, 2004)
-    - [uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon)
-
-### Related papers
-* Qiu, G., Liu, B., Bu, J., & Chen, C. (2011). Opinion word expansion and target extraction through double propagation. Computational linguistics, 37(1), 9-27.
-* Liu, Q., Gao, Z., Liu, B., & Zhang, Y. (2015, June). Automated rule selection for aspect extraction in opinion mining. In Twenty-Fourth International Joint Conference on Artificial Intelligence.
 
 <!--
 ## Obsolete

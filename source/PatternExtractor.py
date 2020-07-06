@@ -45,10 +45,10 @@ class PatternExtractor:
             for sentence_from_doc in doc.sentences:
                 sentence_graph = DependencyGraph(sentence_from_doc)
                 o_t = [(o,t) for o in row['opinion_words'] for t in row['targets']]
-                for o_word,t_word in o_t:
-                    if self.sentence_contains_token(sentence_graph.word_objects, o_word, t_word) == False:
-                        continue
-
+                for o_word, t_word in o_t:
+                    if self.sentence_contains_token(sentence_graph.word_objects, o_word, t_word) == False: continue
+                    if o_word == t_word: continue
+                        
                     try: 
                         extracted_patterns = dependency_handler.extract_patterns(sentence_graph.token2idx, sentence_graph.nodes, sentence_graph.graph, sentence_graph.token2tagdep, o_word, t_word)
                         pattern_counter['-'.join([dep_rel for token, pos, dep_rel in extracted_patterns if dep_rel != 'root'])] += 1
