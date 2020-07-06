@@ -1,6 +1,6 @@
-import time
+import time, copy
 from config import parameters
-from PatternExtractor import PatternExtractor
+from PatternHandler import PatternHandler
 from DependencyGraphHandler import DependencyGraphHandler
 import pandas as pd
 from collections import defaultdict
@@ -12,6 +12,7 @@ lexicon_filepath = parameters.lexicon_filepath
 output_time_txt_filepath = parameters.output_time_txt_filepath
 output_pattern_csv_filepath = parameters.output_pattern_csv_filepath
 output_error_csv_filepath = parameters.output_error_csv_filepath
+output_target_log_csv_filepath = parameters.output_target_log_csv_filepath
 
 def match_opinion_words(content, opinion_word_lexicon):
     opinion_words = []
@@ -20,36 +21,56 @@ def match_opinion_words(content, opinion_word_lexicon):
             if token == opinion: opinion_words.append(token)
     return list(set(opinion_words))
 
-def save_extracted_pattern_results(pattern_counter, err_list):
+def save_extracted_pattern_results(domain, pattern_counter, err_list):
     pattern_list = [tup for tup in pattern_counter.items()]
     pattern_df = pd.DataFrame(pattern_list, columns =['pattern', 'count'])  
-    filepath = output_pattern_csv_filepath % len(pattern_df)
+    filepath = output_pattern_csv_filepath % (domain, len(pattern_df))
     pattern_df.to_csv(filepath, index = False, encoding='utf-8-sig')
     print('Created %s' % filepath)
     
     err_df = pd.DataFrame(err_list, columns =['content', 'current_opinion_word', 'current_target_word', 'parse_error', 'opinion_words', 'targets', 'raw_targets'])  
-    filepath = output_error_csv_filepath % len(err_df[err_df['parse_error']==True])
+    filepath = output_error_csv_filepath % (domain, len(err_df[err_df['parse_error']==True]), len(err_df))
     err_df.to_csv(filepath, index = False, encoding='utf-8-sig')
     print('Created %s' % filepath)
 
-def pattern_extraction(df, pattern_extractor, dependency_handler):
-    df['targets'] = df.apply(lambda x: pattern_extractor.process_targets(x['content'], x['raw_targets']), axis=1) 
+def pattern_extraction(domain, df, pattern_handler, dependency_handler):
+    df['targets'] = df.apply(lambda x: pattern_handler.process_targets(x['content'], x['raw_targets']), axis=1) 
     
     pattern_counter, err_list = defaultdict(int), list()
-    pattern_extractor.extract_patterns(df, pattern_counter, err_list, dependency_handler)
+    pattern_handler.extract_patterns(df, pattern_counter, err_list, dependency_handler)
     
-    save_extracted_pattern_results(pattern_counter, err_list)
+    save_extracted_pattern_results(domain, pattern_counter, err_list)
     return pattern_counter
-    
+
+def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_handler, dependency_handler):
+    dfs = []
+    for idx, one_flattened_dep_rels in enumerate(pattern_counter.keys()):
+        print('[%d/%d]Extracting targets by pattern %s' % (idx, len(pattern_counter.keys()), one_flattened_dep_rels))
+        dep_rels = one_flattened_dep_rels.split('-')
+        df = copy.deepcopy(original_df)
+        df['predicted_targets'] = df.progress_apply(lambda x: pattern_handler.extract_targets(x['content'], x['opinion_words'], dep_rels, dependency_handler), axis=1)
+        df['pattern'] = one_flattened_dep_rels
+        dfs.append(df)
+    concat_df = pd.concat(dfs, ignore_index=True)
+    filepath = output_target_log_csv_filepath % domain
+    concat_df.to_csv(filepath, index = False, encoding='utf-8-sig')
+    print('Created %s' % filepath)
+    return concat_df
+
 def main():
-    df = pd.read_json(data_filepath)
-    opinion_word_lexicon = [item for sublist in pd.read_json(lexicon_filepath).values for item in sublist]
-    df['opinion_words'] = df.progress_apply(lambda x: match_opinion_words(x['content'], opinion_word_lexicon), axis=1)
-    
-    pattern_extractor = PatternExtractor()
+    raw_df = pd.read_json(data_filepath)
+    pattern_handler = PatternHandler()
     dependency_handler = DependencyGraphHandler()
     
-    pattern_counter = pattern_extraction(df, pattern_extractor, dependency_handler)
+    opinion_word_lexicon = [item for sublist in pd.read_json(lexicon_filepath).values for item in sublist]
+    raw_df['opinion_words'] = raw_df.progress_apply(lambda x: match_opinion_words(x['content'], opinion_word_lexicon), axis=1)
+    
+    for domain in raw_df['domain'].unique():
+        print('Processing %s..' % domain)
+        df = raw_df[raw_df['domain']==domain]
+        pattern_counter = pattern_extraction(domain, df, pattern_handler, dependency_handler)
+        
+        concat_df = pattern_quality_estimation(domain, df, pattern_counter, pattern_handler, dependency_handler)
     
 def elapsed_time(start):
     end = time.time()

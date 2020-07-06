@@ -30,3 +30,22 @@ class DependencyGraphHandler:
         shortest_path = nx.shortest_path(graph, source=entity1, target=entity2)
                 
         return [token2tagdep[token] for token in shortest_path]
+    
+    def next_focused_tokens(self, current_tokens, token2idx, nodes, dep_rel):
+        focused_tokens = set()
+        for current_token in current_tokens:
+            indices = token2idx[current_token]
+            for current_token_idx in indices:
+                if nodes[current_token_idx].dep == dep_rel:
+                    focused_tokens.add(nodes[nodes[current_token_idx].governor].token)
+                child_nodes = [nodes[i] for i in range(len(nodes)) if nodes[i].governor==current_token_idx]
+                focused_tokens.update([child_node.token for child_node in child_nodes if child_node.dep == dep_rel])
+        return focused_tokens
+
+    def extract_targets_using_pattern(self, token2idx, nodes, opinion_words, dep_rels):
+
+        focused_tokens = opinion_words
+        for i in range(len(dep_rels)):
+            focused_tokens = self.next_focused_tokens(focused_tokens, token2idx, nodes, dep_rels[i])
+
+        return set(list(focused_tokens))

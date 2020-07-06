@@ -3,7 +3,7 @@ from config import parameters
 import pandas as pd
 from DependencyGraph import DependencyGraph
 
-class PatternExtractor:
+class PatternHandler:
     def __init__(self):
         self.special_char_pattern = re.compile('([,.]+.?\d*)')
         self.nlp = stanfordnlp.Pipeline()
@@ -56,5 +56,13 @@ class PatternExtractor:
                     except: parse_error = True
                         
                     err_list.append([row['content'], o_word, t_word, parse_error, row['opinion_words'], row['targets'], row['raw_targets']])
-                    if cnt % 100 == 0: print('[%04dth] Extracting patterns..' % (cnt))
+                    if cnt % 300 == 0: print('[%04dth] Extracting patterns..' % (cnt))
                     cnt += 1
+                    
+    def extract_targets(self, document, opinion_words, dep_rels, dependency_handler):
+        doc = self.nlp(document)
+        targets = set()
+        for sentence_from_doc in doc.sentences:
+            sentence_graph = DependencyGraph(sentence_from_doc)
+            targets.update(dependency_handler.extract_targets_using_pattern(sentence_graph.token2idx, sentence_graph.nodes, opinion_words, dep_rels))
+        return list(targets)
