@@ -38,8 +38,6 @@ def save_extracted_pattern_results(domain, pattern_counter, err_list):
     print('Created %s' % filepath)
 
 def pattern_extraction(domain, df, pattern_handler, dependency_handler):
-    df['targets'] = df.apply(lambda x: pattern_handler.process_targets(x['content'], x['raw_targets']), axis=1) 
-    
     pattern_counter, err_list = defaultdict(int), list()
     pattern_handler.extract_patterns(df, pattern_counter, err_list, dependency_handler)
     
@@ -85,6 +83,7 @@ def main():
         raw_df['opinion_words'] = raw_df.parallel_apply(lambda x: match_opinion_words(x['content'], opinion_word_lexicon), axis=1)
         print('Converting document into nlp(doc)..')
         raw_df['doc'] = raw_df.progress_apply(lambda x: pattern_handler.nlp(x['content']), axis=1)
+        raw_df['targets'] = raw_df.apply(lambda x: pattern_handler.process_targets(x['content'], x['raw_targets']), axis=1) 
         save_pkl(raw_df, output_raw_df_pkl_filepath)
     
     for domain in raw_df['domain'].unique():
