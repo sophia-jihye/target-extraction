@@ -1,11 +1,20 @@
 from collections import defaultdict, namedtuple
 import networkx as nx
 import re
+from config import parameters
 
 Node = namedtuple("Node", ["idx", "token", "pos", "dep", "governor"])
 class DependencyGraphHandler:
     def __init__(self):
         self.number_pattern = re.compile('\d+')
+        self.errlog_filepath = parameters.errlog_filepath
+        
+    def write_errlog(self, content):
+        filepath = self.errlog_filepath
+        text_file = open(filepath, "w", encoding='utf-8')
+        text_file.write(content)
+        text_file.close()
+        print("Error occurred: ", filepath)
         
     def handle_hyphen_or_compound(self, word, delimiter, token2idx, nodes):
         indices = []
@@ -44,8 +53,7 @@ class DependencyGraphHandler:
 
     def next_compound_token(self, current_token, token2idx, nodes):
         compound_child_nodes = [nodes[i] for i in range(len(nodes)) if nodes[i].governor in token2idx[current_token] and nodes[i].dep.startswith('compound')]
-        if len(compound_child_nodes) > 1: raise
-        if len(compound_child_nodes) == 1: return compound_child_nodes[0].token
+        if len(compound_child_nodes) > 0: return compound_child_nodes[0].token
         return None
     
     def compound(self, new_targets, token2idx, nodes):
@@ -75,4 +83,4 @@ class DependencyGraphHandler:
             focused_tokens = self.next_focused_tokens(focused_tokens, token2idx, nodes, dep_rels[i])
 
         self.compound(focused_tokens, token2idx, nodes)
-        return set(list(focused_tokens))
+        return focused_tokens
