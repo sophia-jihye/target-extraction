@@ -30,7 +30,7 @@ class Parameters:
         self.errlog_filepath = os.path.join(output_err_dir, '%s.log' % (datetime.now().strftime("%Y%m%d-%H-%M-%S")))
         self.output_pattern_csv_filepath = os.path.join(output_sub_dir, '[%s]patterns_%d.csv')
         self.output_error_csv_filepath = os.path.join(output_sub_dir, '[%s]error_%d_%d.csv')
-        self.output_targets_csv_filepath = os.path.join(output_sub_dir, '[%s]extracted_targets.csv')
+        self.output_targets_csv_filepath = os.path.join(output_sub_dir, '[%s]targets_%d.csv')
         self.output_raw_df_pkl_filepath = os.path.join(output_pkl_dir, 'raw_df.pkl')
         self.output_pattern_counter_pkl_filepath = os.path.join(output_pkl_dir, '[%s]pattern_counter.pkl')
         self.num_cpus = mp.cpu_count()

@@ -59,7 +59,7 @@ def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_han
         df.drop(['filename', 'doc'], axis=1, inplace=True)
         dfs.append(df)
     concat_df = pd.concat(dfs, ignore_index=True)
-    filepath = output_targets_csv_filepath % domain
+    filepath = output_targets_csv_filepath % (domain, len(concat_df))
     concat_df.to_csv(filepath, index = False, encoding='utf-8-sig')
     print('Created %s' % filepath)
     
