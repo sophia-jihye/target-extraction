@@ -57,7 +57,8 @@ def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_han
         df['pattern'] = one_flattened_dep_rels
         df['pattern_count'] = pattern_count
 
-        filepath = output_target_log_csv_filepath % (domain, one_flattened_dep_rels, pattern_count)
+        df.drop(['filename', 'doc'], axis=1, inplace=True)
+        filepath = output_target_log_csv_filepath % (domain, pattern_count, one_flattened_dep_rels)
         df.to_csv(filepath, index = False, encoding='utf-8-sig')
         print('Created %s' % filepath)
 
