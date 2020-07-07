@@ -47,7 +47,6 @@ def pattern_extraction(domain, df, pattern_handler, dependency_handler):
     return pattern_counter
 
 def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_handler, dependency_handler):
-    dfs = []
     idx = 0
     for one_flattened_dep_rels, pattern_count in sorted(pattern_counter.items(), key=lambda x: x[-1], reverse=True):
         idx += 1
@@ -57,12 +56,10 @@ def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_han
         df['predicted_targets'] = df.parallel_apply(lambda x: pattern_handler.extract_targets(x['doc'], x['opinion_words'], dep_rels, dependency_handler), axis=1)
         df['pattern'] = one_flattened_dep_rels
         df['pattern_count'] = pattern_count
-        dfs.append(df)
-    concat_df = pd.concat(dfs, ignore_index=True)
-    filepath = output_target_log_csv_filepath % domain
-    concat_df.to_csv(filepath, index = False, encoding='utf-8-sig')
-    print('Created %s' % filepath)
-    return concat_df
+
+        filepath = output_target_log_csv_filepath % (domain, one_flattened_dep_rels, pattern_count)
+        df.to_csv(filepath, index = False, encoding='utf-8-sig')
+        print('Created %s' % filepath)
 
 def save_pkl(item_to_save, filepath):
     with open(filepath, 'wb') as f:
@@ -99,7 +96,7 @@ def main():
             pattern_counter = pattern_extraction(domain, df, pattern_handler, dependency_handler)
             save_pkl(pattern_counter, filepath)
         
-        concat_df = pattern_quality_estimation(domain, df, pattern_counter, pattern_handler, dependency_handler)
+        pattern_quality_estimation(domain, df, pattern_counter, pattern_handler, dependency_handler)
     
 def elapsed_time(start):
     end = time.time()

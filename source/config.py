@@ -10,11 +10,12 @@ output_dir = os.path.join(base_dir, 'output', 'preliminary')
 output_err_dir = os.path.join(output_dir, 'err')
 output_sub_dir = os.path.join(output_dir, 'sub')
 output_pkl_dir = os.path.join(output_dir, 'pkl')
+output_targets_dir = os.path.join(output_dir, 'targets')
 
 parameters_json_filepath = os.path.join(output_dir, 'parameters.json')
 
 # create dirs
-dirs = [output_dir, output_err_dir, output_sub_dir, output_pkl_dir]
+dirs = [output_dir, output_err_dir, output_sub_dir, output_pkl_dir, output_targets_dir]
 for directory in dirs:
     if not os.path.exists(directory):
         os.makedirs(directory)  
@@ -30,7 +31,7 @@ class Parameters:
         self.errlog_filepath = os.path.join(output_err_dir, '%s.log' % (datetime.now().strftime("%Y%m%d-%H-%M-%S")))
         self.output_pattern_csv_filepath = os.path.join(output_sub_dir, '[%s]patterns_%d.csv')
         self.output_error_csv_filepath = os.path.join(output_sub_dir, '[%s]error_%d_%d.csv')
-        self.output_target_log_csv_filepath = os.path.join(output_sub_dir, '[%s]extracted_targets_log.csv')
+        self.output_target_log_csv_filepath = os.path.join(output_targets_dir, '%s_%s_%s.csv')
         self.output_raw_df_pkl_filepath = os.path.join(output_pkl_dir, 'raw_df.pkl')
         self.output_pattern_counter_pkl_filepath = os.path.join(output_pkl_dir, '[%s]pattern_counter.pkl')
         self.num_cpus = mp.cpu_count()
