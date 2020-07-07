@@ -1,4 +1,4 @@
-import time, copy
+import time, copy, os
 from config import parameters
 from PatternHandler import PatternHandler
 from DependencyGraphHandler import DependencyGraphHandler
@@ -6,6 +6,8 @@ import pandas as pd
 from collections import defaultdict
 from tqdm import tqdm
 tqdm.pandas()
+from pandarallel import pandarallel
+pandarallel.initialize(nb_workers=parameters.num_cpus, progress_bar=True)
 
 data_filepath = parameters.data_filepath
 lexicon_filepath = parameters.lexicon_filepath
@@ -48,7 +50,8 @@ def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_han
         print('[%d/%d]Extracting targets by pattern %s' % (idx, len(pattern_counter.keys()), one_flattened_dep_rels))
         dep_rels = one_flattened_dep_rels.split('-')
         df = copy.deepcopy(original_df)
-        df['predicted_targets'] = df.progress_apply(lambda x: pattern_handler.extract_targets(x['content'], x['opinion_words'], dep_rels, dependency_handler), axis=1)
+        df['doc'] = df.progress_apply(lambda x: pattern_handler.nlp(x['content']), axis=1)
+        df['predicted_targets'] = df.parallel_apply(lambda x: pattern_handler.extract_targets(x['doc'], x['opinion_words'], dep_rels, dependency_handler), axis=1)
         df['pattern'] = one_flattened_dep_rels
         dfs.append(df)
     concat_df = pd.concat(dfs, ignore_index=True)
@@ -62,8 +65,9 @@ def main():
     pattern_handler = PatternHandler()
     dependency_handler = DependencyGraphHandler()
     
+    print('Matching opinion words..')
     opinion_word_lexicon = [item for sublist in pd.read_json(lexicon_filepath).values for item in sublist]
-    raw_df['opinion_words'] = raw_df.progress_apply(lambda x: match_opinion_words(x['content'], opinion_word_lexicon), axis=1)
+    raw_df['opinion_words'] = raw_df.parallel_apply(lambda x: match_opinion_words(x['content'], opinion_word_lexicon), axis=1)
     
     for domain in raw_df['domain'].unique():
         print('Processing %s..' % domain)

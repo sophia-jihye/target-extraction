@@ -1,5 +1,6 @@
 import os, json
 from datetime import datetime
+import multiprocessing as mp
 
 # system configuration
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,6 +28,7 @@ class Parameters:
         self.output_pattern_csv_filepath = os.path.join(output_sub_dir, '[%s]patterns_%d.csv')
         self.output_error_csv_filepath = os.path.join(output_sub_dir, '[%s]error_%d_%d.csv')
         self.output_target_log_csv_filepath = os.path.join(output_sub_dir, '[%s]extracted_targets_log.csv')
+        self.num_cpus = mp.cpu_count()
         
     def __str__(self):
         item_strf = ['{} = {}'.format(attribute, value) for attribute, value in self.__dict__.items()]

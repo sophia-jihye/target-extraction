@@ -59,8 +59,7 @@ class PatternHandler:
                     if cnt % 300 == 0: print('[%04dth] Extracting patterns..' % (cnt))
                     cnt += 1
                     
-    def extract_targets(self, document, opinion_words, dep_rels, dependency_handler):
-        doc = self.nlp(document)
+    def extract_targets(self, doc, opinion_words, dep_rels, dependency_handler):
         targets = set()
         for sentence_from_doc in doc.sentences:
             sentence_graph = DependencyGraph(sentence_from_doc)
