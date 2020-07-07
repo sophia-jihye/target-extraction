@@ -1,4 +1,4 @@
-import time, copy, os
+import time, copy, os, pickle
 from config import parameters
 from PatternHandler import PatternHandler
 from DependencyGraphHandler import DependencyGraphHandler
@@ -15,6 +15,8 @@ output_time_txt_filepath = parameters.output_time_txt_filepath
 output_pattern_csv_filepath = parameters.output_pattern_csv_filepath
 output_error_csv_filepath = parameters.output_error_csv_filepath
 output_target_log_csv_filepath = parameters.output_target_log_csv_filepath
+output_raw_df_pkl_filepath = parameters.output_raw_df_pkl_filepath
+output_pattern_counter_pkl_filepath = parameters.output_pattern_counter_pkl_filepath
 
 def match_opinion_words(content, opinion_word_lexicon):
     opinion_words = []
@@ -46,12 +48,15 @@ def pattern_extraction(domain, df, pattern_handler, dependency_handler):
 
 def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_handler, dependency_handler):
     dfs = []
-    for idx, one_flattened_dep_rels in enumerate(pattern_counter.keys()):
+    idx = 0
+    for one_flattened_dep_rels, pattern_count in sorted(pattern_counter.items(), key=lambda x: x[-1], reverse=True):
+        idx += 1
         print('[%d/%d]Extracting targets by pattern %s' % (idx, len(pattern_counter.keys()), one_flattened_dep_rels))
         dep_rels = one_flattened_dep_rels.split('-')
         df = copy.deepcopy(original_df)
         df['predicted_targets'] = df.parallel_apply(lambda x: pattern_handler.extract_targets(x['doc'], x['opinion_words'], dep_rels, dependency_handler), axis=1)
         df['pattern'] = one_flattened_dep_rels
+        df['pattern_count'] = pattern_count
         dfs.append(df)
     concat_df = pd.concat(dfs, ignore_index=True)
     filepath = output_target_log_csv_filepath % domain
@@ -59,21 +64,40 @@ def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_han
     print('Created %s' % filepath)
     return concat_df
 
+def save_pkl(item_to_save, filepath):
+    with open(filepath, 'wb') as f:
+        pickle.dump(item_to_save, f)
+    print('Created %s' % filepath)
+
+def load_pkl(filepath):
+    with open(filepath, 'rb') as f:
+        loaded_item = pickle.load(f)
+    print('Loaded %s' % filepath)
+    return loaded_item
+
 def main():
-    raw_df = pd.read_json(data_filepath)
     pattern_handler = PatternHandler()
     dependency_handler = DependencyGraphHandler()
     
-    print('Matching opinion words..')
-    opinion_word_lexicon = [item for sublist in pd.read_json(lexicon_filepath).values for item in sublist]
-    raw_df['opinion_words'] = raw_df.parallel_apply(lambda x: match_opinion_words(x['content'], opinion_word_lexicon), axis=1)
-    print('Converting document into nlp(doc)..')
-    raw_df['doc'] = raw_df.progress_apply(lambda x: pattern_handler.nlp(x['content']), axis=1)
+    if os.path.exists(output_raw_df_pkl_filepath): raw_df = load_pkl(output_raw_df_pkl_filepath)
+    else:
+        raw_df = pd.read_json(data_filepath)
+        print('Matching opinion words..')
+        opinion_word_lexicon = [item for sublist in pd.read_json(lexicon_filepath).values for item in sublist]
+        raw_df['opinion_words'] = raw_df.parallel_apply(lambda x: match_opinion_words(x['content'], opinion_word_lexicon), axis=1)
+        print('Converting document into nlp(doc)..')
+        raw_df['doc'] = raw_df.progress_apply(lambda x: pattern_handler.nlp(x['content']), axis=1)
+        save_pkl(raw_df, output_raw_df_pkl_filepath)
     
     for domain in raw_df['domain'].unique():
         print('Processing [%s]..' % domain)
         df = raw_df[raw_df['domain']==domain]
-        pattern_counter = pattern_extraction(domain, df, pattern_handler, dependency_handler)
+        
+        filepath = output_pattern_counter_pkl_filepath % domain
+        if os.path.exists(filepath): pattern_counter = load_pkl(filepath)
+        else: 
+            pattern_counter = pattern_extraction(domain, df, pattern_handler, dependency_handler)
+            save_pkl(pattern_counter, filepath)
         
         concat_df = pattern_quality_estimation(domain, df, pattern_counter, pattern_handler, dependency_handler)
     

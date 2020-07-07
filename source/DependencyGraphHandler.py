@@ -42,10 +42,37 @@ class DependencyGraphHandler:
                 focused_tokens.update([child_node.token for child_node in child_nodes if child_node.dep == dep_rel])
         return focused_tokens
 
+    def next_compound_token(self, current_token, token2idx, nodes):
+        compound_child_nodes = [nodes[i] for i in range(len(nodes)) if nodes[i].governor in token2idx[current_token] and nodes[i].dep.startswith('compound')]
+        if len(compound_child_nodes) > 1: raise
+        if len(compound_child_nodes) == 1: return compound_child_nodes[0].token
+        return None
+    
+    def compound(self, new_targets, token2idx, nodes):
+        to_be_deleted, to_be_added = set(), set()
+        for target in new_targets:
+            compound_tokens = list()
+
+            focused_token = target
+            while True:
+                focused_token = self.next_compound_token(focused_token, token2idx, nodes)
+                if focused_token is None: break
+                compound_tokens.append(focused_token)
+            compound_tokens.append(target)
+
+            if len(compound_tokens) > 1:
+                to_be_deleted.add(target)
+                to_be_added.add(' '.join(compound_tokens))
+        for item in to_be_deleted:
+            new_targets.remove(item)
+        for item in to_be_added:
+            new_targets.add(item)
+    
     def extract_targets_using_pattern(self, token2idx, nodes, opinion_words, dep_rels):
 
-        focused_tokens = opinion_words
+        focused_tokens = set(opinion_words)
         for i in range(len(dep_rels)):
             focused_tokens = self.next_focused_tokens(focused_tokens, token2idx, nodes, dep_rels[i])
 
+        self.compound(focused_tokens, token2idx, nodes)
         return set(list(focused_tokens))
