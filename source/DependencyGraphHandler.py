@@ -53,6 +53,7 @@ class DependencyGraphHandler:
 
     def next_compound_token(self, current_token, token2idx, nodes):
         compound_child_nodes = [nodes[i] for i in range(len(nodes)) if nodes[i].governor in token2idx[current_token] and nodes[i].dep.startswith('compound')]
+        
         if len(compound_child_nodes) > 0: return compound_child_nodes[0].token
         return None
     
@@ -64,7 +65,7 @@ class DependencyGraphHandler:
             focused_token = target
             while True:
                 focused_token = self.next_compound_token(focused_token, token2idx, nodes)
-                if focused_token is None: break
+                if focused_token is None or focused_token in compound_tokens: break
                 compound_tokens.append(focused_token)
             compound_tokens.append(target)
 
@@ -77,10 +78,8 @@ class DependencyGraphHandler:
             new_targets.add(item)
     
     def extract_targets_using_pattern(self, token2idx, nodes, opinion_words, dep_rels):
-
         focused_tokens = set(opinion_words)
         for i in range(len(dep_rels)):
             focused_tokens = self.next_focused_tokens(focused_tokens, token2idx, nodes, dep_rels[i])
-
         self.compound(focused_tokens, token2idx, nodes)
         return focused_tokens

@@ -14,7 +14,7 @@ lexicon_filepath = parameters.lexicon_filepath
 output_time_txt_filepath = parameters.output_time_txt_filepath
 output_pattern_csv_filepath = parameters.output_pattern_csv_filepath
 output_error_csv_filepath = parameters.output_error_csv_filepath
-output_targets_csv_filepath = parameters.output_targets_csv_filepath
+output_target_log_csv_filepath = parameters.output_target_log_csv_filepath
 output_raw_df_pkl_filepath = parameters.output_raw_df_pkl_filepath
 output_pattern_counter_pkl_filepath = parameters.output_pattern_counter_pkl_filepath
 
@@ -45,10 +45,11 @@ def pattern_extraction(domain, df, pattern_handler, dependency_handler):
     return pattern_counter
 
 def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_handler, dependency_handler):
-    dfs = []
     idx = 0
     for one_flattened_dep_rels, pattern_count in sorted(pattern_counter.items(), key=lambda x: x[-1], reverse=True):
         idx += 1
+        filepath = output_target_log_csv_filepath % (domain, pattern_count, one_flattened_dep_rels)
+        if os.path.exists(filepath): continue
         print('[%d/%d]Extracting targets by pattern %s' % (idx, len(pattern_counter.keys()), one_flattened_dep_rels))
         dep_rels = one_flattened_dep_rels.split('-')
         df = copy.deepcopy(original_df)
@@ -57,13 +58,8 @@ def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_han
         df['pattern_count'] = pattern_count
 
         df.drop(['filename', 'doc'], axis=1, inplace=True)
-        dfs.append(df)
-    concat_df = pd.concat(dfs, ignore_index=True)
-    filepath = output_targets_csv_filepath % (domain, len(concat_df))
-    concat_df.to_csv(filepath, index = False, encoding='utf-8-sig')
-    print('Created %s' % filepath)
-    
-    return concat_df
+        df.to_csv(filepath, index = False, encoding='utf-8-sig')
+        print('Created %s' % filepath)
 
 def save_pkl(item_to_save, filepath):
     with open(filepath, 'wb') as f:
@@ -101,7 +97,7 @@ def main():
             pattern_counter = pattern_extraction(domain, df, pattern_handler, dependency_handler)
             save_pkl(pattern_counter, filepath)
         
-        concat_df = pattern_quality_estimation(domain, df, pattern_counter, pattern_handler, dependency_handler)
+        pattern_quality_estimation(domain, df, pattern_counter, pattern_handler, dependency_handler)
     
 def elapsed_time(start):
     end = time.time()
