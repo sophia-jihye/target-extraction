@@ -50,7 +50,6 @@ def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_han
         print('[%d/%d]Extracting targets by pattern %s' % (idx, len(pattern_counter.keys()), one_flattened_dep_rels))
         dep_rels = one_flattened_dep_rels.split('-')
         df = copy.deepcopy(original_df)
-        df['doc'] = df.progress_apply(lambda x: pattern_handler.nlp(x['content']), axis=1)
         df['predicted_targets'] = df.parallel_apply(lambda x: pattern_handler.extract_targets(x['doc'], x['opinion_words'], dep_rels, dependency_handler), axis=1)
         df['pattern'] = one_flattened_dep_rels
         dfs.append(df)
@@ -68,9 +67,11 @@ def main():
     print('Matching opinion words..')
     opinion_word_lexicon = [item for sublist in pd.read_json(lexicon_filepath).values for item in sublist]
     raw_df['opinion_words'] = raw_df.parallel_apply(lambda x: match_opinion_words(x['content'], opinion_word_lexicon), axis=1)
+    print('Converting document into nlp(doc)..')
+    raw_df['doc'] = raw_df.progress_apply(lambda x: pattern_handler.nlp(x['content']), axis=1)
     
     for domain in raw_df['domain'].unique():
-        print('Processing %s..' % domain)
+        print('Processing [%s]..' % domain)
         df = raw_df[raw_df['domain']==domain]
         pattern_counter = pattern_extraction(domain, df, pattern_handler, dependency_handler)
         
