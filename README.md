@@ -1,6 +1,6 @@
 # domain-specific target extraction
 
-## `source`: Shortest path in dependency graph
+## `source`: Shortest path in a dependency graph
 
 ### References
 * Customer review dataset & Sentiment lexicon for customer reviews
