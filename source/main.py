@@ -1,4 +1,4 @@
-import time, copy, os, pickle
+import time, copy, os, pickle, glob, csv, ast
 from config import parameters
 from PatternHandler import PatternHandler
 from DependencyGraphHandler import DependencyGraphHandler
@@ -17,6 +17,9 @@ output_error_csv_filepath = parameters.output_error_csv_filepath
 output_target_log_csv_filepath = parameters.output_target_log_csv_filepath
 output_raw_df_pkl_filepath = parameters.output_raw_df_pkl_filepath
 output_pattern_counter_pkl_filepath = parameters.output_pattern_counter_pkl_filepath
+output_targets_dir = parameters.output_targets_dir
+output_targets_concat_csv_filepath = parameters.output_targets_concat_csv_filepath
+output_pattern_evaluation_csv_filepath = parameters.output_pattern_evaluation_csv_filepath
 
 def match_opinion_words(content, opinion_word_lexicon):
     opinion_words = []
@@ -44,6 +47,47 @@ def pattern_extraction(domain, df, pattern_handler, dependency_handler):
     save_extracted_pattern_results(domain, pattern_counter, err_list)
     return pattern_counter
 
+def merge_dfs(data_filepaths):
+    dfs = []
+    for data_filepath in data_filepaths:
+        df = pd.read_csv(data_filepath)
+        dfs.append(df)
+    return pd.concat(dfs, ignore_index=True)
+
+def calculate_precision_recall(df):
+    correct_targets_mul = list([item for sublist in df['targets'].values for item in sublist if item != ''])
+    predicted_targets_mul = list([item for sublist in df['predicted_targets'].values for item in sublist if item != ''])
+    
+    tp_mul = 0
+    for item in predicted_targets_mul:
+        try: 
+            correct_targets_mul.remove(item)
+            tp_mul += 1
+        except: pass
+    
+    if len(predicted_targets_mul) != 0: pre_mul = tp_mul / len(predicted_targets_mul)
+    else: pre_mul = 0
+    
+    if len(correct_targets_mul) != 0: rec_mul = tp_mul / len(correct_targets_mul)
+    else: rec_mul = 0
+    
+    correct_targets_dis = set([item for sublist in df['targets'].values for item in sublist if item != ''])
+    predicted_targets_dis = set([item for sublist in df['predicted_targets'].values for item in sublist if item != ''])
+    
+    tp_dis = len([item for item in predicted_targets_dis if item in correct_targets_dis])
+    if len(predicted_targets_dis) != 0: pre_dis = tp_dis / len(predicted_targets_dis)
+    else: pre_dis = 0
+    
+    if len(correct_targets_dis) != 0: rec_dis = tp_dis / len(correct_targets_dis)
+    else: rec_dis = 0
+    
+    return pre_mul, rec_mul, pre_dis, rec_dis
+
+def calculate_f1(precision, recall):
+    denominator = precision + recall
+    if denominator == 0: return 0
+    return (2*precision*recall)/denominator
+
 def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_handler, dependency_handler):
     idx = 0
     for one_flattened_dep_rels, pattern_count in sorted(pattern_counter.items(), key=lambda x: x[-1], reverse=True):
@@ -60,6 +104,27 @@ def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_han
         df.drop(['filename', 'doc'], axis=1, inplace=True)
         df.to_csv(filepath, index = False, encoding='utf-8-sig')
         print('Created %s' % filepath)
+        
+    print('Merging csv files in %s for [%s]..' % (output_targets_dir, domain))
+    concat_df = merge_dfs(glob.glob(os.path.join(output_targets_dir, '*.csv')))
+    filepath = output_targets_concat_csv_filepath % domain
+    concat_df.to_csv(filepath, index = False, encoding='utf-8-sig')
+    print('Created %s' % filepath)
+
+    concat_df['targets'] = concat_df.apply(lambda x: ast.literal_eval(x['targets']), axis=1)
+    concat_df['predicted_targets'] = concat_df.apply(lambda x: ast.literal_eval(x['predicted_targets']), axis=1)
+    
+    print('Evaluating rules for [%s]..' % domain)
+    filepath = output_pattern_evaluation_csv_filepath % domain
+    f = open(filepath, 'w', encoding='utf-8-sig')
+    wr = csv.writer(f)  
+    wr.writerow(['domain', 'pattern', 'count', 'precision_multiple', 'recall_multiple', 'f1_multiple', 'precision_distinct', 'recall_distinct', 'f1_distinct'])
+    for pattern in concat_df['pattern'].unique():
+        current_df = concat_df[concat_df['pattern']==pattern]
+        pre_mul, rec_mul, pre_dis, rec_dis = calculate_precision_recall(current_df)
+        wr.writerow([domain, pattern, '%d'%current_df['pattern_count'].iloc[0], '%.2f'%pre_mul, '%.2f'%rec_mul, '%.2f'%calculate_f1(pre_mul,rec_mul), '%.2f'%pre_dis, '%.2f'%rec_dis, '%.2f'%calculate_f1(pre_dis,rec_dis)])
+    f.close()
+    print('Created %s' % filepath)
 
 def save_pkl(item_to_save, filepath):
     with open(filepath, 'wb') as f:

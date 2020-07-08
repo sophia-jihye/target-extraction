@@ -9,13 +9,13 @@ base_output_dir = os.path.join(base_dir, 'output')
 output_dir = os.path.join(base_dir, 'output', 'preliminary')
 output_err_dir = os.path.join(output_dir, 'err')
 output_sub_dir = os.path.join(output_dir, 'sub')
-output_pkl_dir = os.path.join(output_dir, 'pkl')
+output_save_dir = os.path.join(output_dir, 'save')
 output_targets_dir = os.path.join(output_dir, 'targets')
 
 parameters_json_filepath = os.path.join(output_dir, 'parameters.json')
 
 # create dirs
-dirs = [output_dir, output_err_dir, output_sub_dir, output_pkl_dir, output_targets_dir]
+dirs = [output_dir, output_err_dir, output_sub_dir, output_save_dir, output_targets_dir]
 for directory in dirs:
     if not os.path.exists(directory):
         os.makedirs(directory)  
@@ -26,14 +26,17 @@ class Parameters:
         self.data_filepath = os.path.join(base_dir, 'data', 'parsed', 'five-three_5995.json')
         self.lexicon_filepath = os.path.join(base_dir, 'data', 'parsed', 'lexicon_6788.json')
         self.output_dir = output_dir
+        self.output_targets_dir = output_targets_dir
         self.parameters_json_filepath = parameters_json_filepath
         self.output_time_txt_filepath = os.path.join(output_dir, 'elapsed_time.txt')
+        self.output_pattern_evaluation_csv_filepath = os.path.join(output_dir, '[%s]pattern_evaluation.csv')
         self.errlog_filepath = os.path.join(output_err_dir, '%s.log' % (datetime.now().strftime("%Y%m%d-%H-%M-%S")))
         self.output_pattern_csv_filepath = os.path.join(output_sub_dir, '[%s]patterns_%d.csv')
         self.output_error_csv_filepath = os.path.join(output_sub_dir, '[%s]error_%d_%d.csv')
         self.output_target_log_csv_filepath = os.path.join(output_targets_dir, '%s_%02d_%s.csv')
-        self.output_raw_df_pkl_filepath = os.path.join(output_pkl_dir, 'raw_df.pkl')
-        self.output_pattern_counter_pkl_filepath = os.path.join(output_pkl_dir, '[%s]pattern_counter.pkl')
+        self.output_raw_df_pkl_filepath = os.path.join(output_save_dir, 'raw_df.pkl')
+        self.output_pattern_counter_pkl_filepath = os.path.join(output_save_dir, '[%s]pattern_counter.pkl')
+        self.output_targets_concat_csv_filepath = os.path.join(output_save_dir, '[%s]targets.csv')
         self.num_cpus = 10
         
     def __str__(self):
