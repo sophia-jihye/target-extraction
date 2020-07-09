@@ -54,16 +54,24 @@ def merge_dfs(data_filepaths):
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
 
+def calculate_true_positive(predicted_list, correct_list):
+    tp = 0
+    for predicted_compound_target in predicted_list:
+        if predicted_compound_target in correct_list:   # 'screen' <- predicted 'screen'
+            correct_list.remove(predicted_compound_target)
+            tp += 1
+            continue
+        for correct_target in correct_list:
+            if predicted_compound_target.find(correct_target) > -1:   # 'audio' <- predicted 'audio aspects'
+                correct_list.remove(correct_target)
+                tp += 1
+                break
+    return tp
+
 def calculate_precision_recall(df):
     correct_targets_mul = list([item for sublist in df['targets'].values for item in sublist if item != ''])
     predicted_targets_mul = list([item for sublist in df['predicted_targets'].values for item in sublist if item != ''])
-    
-    tp_mul = 0
-    for item in predicted_targets_mul:
-        try: 
-            correct_targets_mul.remove(item)
-            tp_mul += 1
-        except: pass
+    tp_mul = calculate_true_positive(predicted_targets_mul, correct_targets_mul)
     
     if len(predicted_targets_mul) != 0: pre_mul = tp_mul / len(predicted_targets_mul)
     else: pre_mul = 0
@@ -73,8 +81,8 @@ def calculate_precision_recall(df):
     
     correct_targets_dis = set([item for sublist in df['targets'].values for item in sublist if item != ''])
     predicted_targets_dis = set([item for sublist in df['predicted_targets'].values for item in sublist if item != ''])
+    tp_dis = calculate_true_positive(predicted_targets_dis, correct_targets_dis)
     
-    tp_dis = len([item for item in predicted_targets_dis if item in correct_targets_dis])
     if len(predicted_targets_dis) != 0: pre_dis = tp_dis / len(predicted_targets_dis)
     else: pre_dis = 0
     
@@ -149,7 +157,9 @@ def main():
         raw_df['opinion_words'] = raw_df.parallel_apply(lambda x: match_opinion_words(x['content'], opinion_word_lexicon), axis=1)
         print('Converting document into nlp(doc)..')
         raw_df['doc'] = raw_df.progress_apply(lambda x: pattern_handler.nlp(x['content']), axis=1)
-        raw_df['targets'] = raw_df.apply(lambda x: pattern_handler.process_targets(x['content'], x['raw_targets']), axis=1) 
+        
+        print('Filtering targets using nlp(doc)..')
+        raw_df['targets'] = raw_df.progress_apply(lambda x: pattern_handler.process_targets(x['content'], x['raw_targets']), axis=1) 
         save_pkl(raw_df, output_raw_df_pkl_filepath)
     
     for domain in raw_df['domain'].unique():

@@ -2,6 +2,18 @@
 
 ## `source`: Shortest path in a dependency graph
 
+### Dataset description
+| Data |     Product     | # of Sentences | # of Aspects |
+|:----:|:---------------:|:--------------:|-------------:|
+|  D1  |  Digital camera |            597 |          218 |
+|  D2  |  Digital camera |            346 |          147 |
+|  D3  |    Cell phone   |            540 |          268 |
+|  D4  |    MP3 player   |          1,690 |          622 |
+|  D5  |    DVD plaeyr   |            730 |          286 |
+|  D6  |     Computer    |            526 |          313 |
+|  D7  | Wireless router |            877 |          272 |
+|  D8  |     Speaker     |            689 |          388 |
+
 ### References
 * Customer review dataset & Sentiment lexicon for customer reviews
     - Qiu, G., Liu, B., Bu, J., & Chen, C. (2011). Opinion word expansion and target extraction through double propagation. Computational linguistics, 37(1), 9-27.

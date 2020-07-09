@@ -2,11 +2,19 @@ import stanfordnlp, re
 from config import parameters
 import pandas as pd
 from DependencyGraph import DependencyGraph
+from nltk import pos_tag
 
 class PatternHandler:
     def __init__(self):
-        self.special_char_pattern = re.compile('([,.]+.?\d*)')
+        self.special_char_pattern = re.compile('([,.+]+.?\d*)')
         self.nlp = stanfordnlp.Pipeline()
+        self.noun = ['NN', 'NNS', 'NNP']
+        self.doublespace_pattern = re.compile('\s+')
+    
+    def leave_noun_only(self, term_list):
+        term_list = [self.doublespace_pattern.sub(' ', self.special_char_pattern.sub(' ', item)) for item in term_list if item != '']   # 'sound + quality'
+        term_list = [term for term, pos in pos_tag(term_list) if pos in self.noun and len(term) > 1]
+        return term_list
         
     def process_targets(self, content, targets):
         content = self.special_char_pattern.sub(' ', content)   # dvds -> dvds (o) dvds.(x)
@@ -28,7 +36,7 @@ class PatternHandler:
 
             if candidate_token is not None: processed_targets.append(candidate_token) # transfter (MISSPELLED) -> (DROP)
 
-        processed_targets = [item for item in processed_targets if item != '']
+        processed_targets = self.leave_noun_only(processed_targets)
         return list(set(processed_targets))
     
     def sentence_contains_token(self, word_objects, o_word, t_word):
@@ -64,4 +72,7 @@ class PatternHandler:
         for sentence_from_doc in doc.sentences:
             sentence_graph = DependencyGraph(sentence_from_doc)
             targets.update(dependency_handler.extract_targets_using_pattern(sentence_graph.token2idx, sentence_graph.nodes, opinion_words, dep_rels))
-        return list(targets)
+            
+        targets = list(targets)
+        targets = self.leave_noun_only(targets)
+        return list(set(targets))
