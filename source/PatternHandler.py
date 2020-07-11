@@ -67,12 +67,15 @@ class PatternHandler:
                     if cnt % 300 == 0: print('[%04dth] Extracting patterns..' % (cnt))
                     cnt += 1
                     
-    def extract_targets(self, doc, opinion_words, dep_rels, dependency_handler):
-        targets = set()
-        for sentence_from_doc in doc.sentences:
-            sentence_graph = DependencyGraph(sentence_from_doc)
-            targets.update(dependency_handler.extract_targets_using_pattern(sentence_graph.token2idx, sentence_graph.nodes, opinion_words, dep_rels))
-            
-        targets = list(targets)
-        targets = self.leave_noun_only(targets)
+    def extract_targets(self, doc, opinion_words, dep_rels, dependency_handler, predicted_targets=[]):
+        if len(predicted_targets) > 0: 
+            targets = predicted_targets
+        else:
+            targets = set()
+            for sentence_from_doc in doc.sentences:
+                sentence_graph = DependencyGraph(sentence_from_doc)
+                targets.update(dependency_handler.extract_targets_using_pattern(sentence_graph.token2idx, sentence_graph.nodes, opinion_words, dep_rels))
+
+            targets = list(targets)
+            targets = self.leave_noun_only(targets)
         return list(set(targets))

@@ -29,10 +29,12 @@ class Parameters:
         self.output_targets_dir = output_targets_dir
         self.parameters_json_filepath = parameters_json_filepath
         self.output_time_txt_filepath = os.path.join(output_dir, 'elapsed_time.txt')
-        self.output_pattern_evaluation_csv_filepath = os.path.join(output_sub_dir, '[%s]pattern_evaluation.csv')
+        self.output_final_report_csv_filepath = os.path.join(output_dir, 'final_report.csv')
         self.errlog_filepath = os.path.join(output_err_dir, '%s.log' % (datetime.now().strftime("%Y%m%d-%H-%M-%S")))
+        self.output_pattern_evaluation_csv_filepath = os.path.join(output_sub_dir, '[%s]pattern_evaluation.csv')
         self.output_pattern_csv_filepath = os.path.join(output_sub_dir, '[%s]patterns_%d.csv')
         self.output_error_csv_filepath = os.path.join(output_sub_dir, '[%s]error_%d_%d.csv')
+        self.output_subset_selection_log_filepath = os.path.join(output_sub_dir, '[%s]subset_selection.log')
         self.output_target_log_csv_filepath = os.path.join(output_targets_dir, '%s_%02d_%s.csv')
         self.output_raw_df_pkl_filepath = os.path.join(output_save_dir, 'raw_df.pkl')
         self.output_pattern_counter_pkl_filepath = os.path.join(output_save_dir, '[%s]pattern_counter.pkl')

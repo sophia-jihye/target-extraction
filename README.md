@@ -9,7 +9,7 @@
 |  D2  |  Digital camera |            346 |          147 |
 |  D3  |    Cell phone   |            540 |          268 |
 |  D4  |    MP3 player   |          1,690 |          622 |
-|  D5  |    DVD plaeyr   |            730 |          286 |
+|  D5  |    DVD player   |            730 |          286 |
 |  D6  |     Computer    |            526 |          313 |
 |  D7  | Wireless router |            877 |          272 |
 |  D8  |     Speaker     |            689 |          388 |
