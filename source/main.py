@@ -114,7 +114,7 @@ def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_han
         print('Created %s' % filepath)
         
     print('Merging csv files in %s for [%s]..' % (output_targets_dir, domain))
-    concat_df = merge_dfs(glob.glob(os.path.join(output_targets_dir, '*.csv')))
+    concat_df = merge_dfs(glob.glob(os.path.join(output_targets_dir, '%s_*.csv'%domain)))
     filepath = output_targets_concat_csv_filepath % domain
     concat_df.to_csv(filepath, index = False, encoding='utf-8-sig')
     print('Created %s' % filepath)

@@ -29,7 +29,7 @@ class Parameters:
         self.output_targets_dir = output_targets_dir
         self.parameters_json_filepath = parameters_json_filepath
         self.output_time_txt_filepath = os.path.join(output_dir, 'elapsed_time.txt')
-        self.output_pattern_evaluation_csv_filepath = os.path.join(output_dir, '[%s]pattern_evaluation.csv')
+        self.output_pattern_evaluation_csv_filepath = os.path.join(output_sub_dir, '[%s]pattern_evaluation.csv')
         self.errlog_filepath = os.path.join(output_err_dir, '%s.log' % (datetime.now().strftime("%Y%m%d-%H-%M-%S")))
         self.output_pattern_csv_filepath = os.path.join(output_sub_dir, '[%s]patterns_%d.csv')
         self.output_error_csv_filepath = os.path.join(output_sub_dir, '[%s]error_%d_%d.csv')
