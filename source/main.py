@@ -163,7 +163,6 @@ def pick_least_redundant_one_pattern(selected_pattern_list, subset_handler):
         patterns2.append(candidate_pattern)
         x2 = subset_handler.evaluate_patterns_tp(patterns2)['tp'].values.reshape(-1,1)
         redundancy_degree_score = mutual_info_classif(x1, x2, discrete_features=[0])
-        print('%s=>%.4f' % (candidate_pattern, redundancy_degree_score))
         if redundancy_degree_score < min_redundancy_degree_score:
             min_redundancy_degree_score = redundancy_degree_score
             min_redundant_pattern = candidate_pattern
