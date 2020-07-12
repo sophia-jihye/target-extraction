@@ -101,6 +101,7 @@ def calculate_f1(precision, recall):
     return (2*precision*recall)/denominator
 
 def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_handler, dependency_handler):
+    print('Processing pattern_quality_estimation for [%s] (# of patterns = %d)..' % (domain, len(pattern_counter)))
     idx = 0
     for one_flattened_dep_rels, pattern_count in sorted(pattern_counter.items(), key=lambda x: x[-1], reverse=True):
         idx += 1
@@ -156,18 +157,11 @@ def evaluate_rule_set(original_df, selected_pattern_list, pattern_handler, depen
     f1_dis = calculate_f1(pre_dis,rec_dis)
     return f1_mul, f1_dis
 
-def show_progress(it, milestones=100):
-    for i, x in enumerate(it):
-        yield x
-        processed = i + 1
-        if processed % milestones == 0:
-            print('Processed %sth elements..' % processed)
-
 def pick_least_redundant_one_pattern(selected_pattern_list, subset_handler):
     print('Picking out the least redundant one pattern against %s.. ' % str(selected_pattern_list))
     x1 = subset_handler.evaluate_patterns_tp(selected_pattern_list)['tp'].values.reshape(-1,1)
     
-    redundancy_degree_score_dict = {candidate_pattern:mutual_info_classif(x1, subset_handler.evaluate_patterns_tp([*selected_pattern_list, candidate_pattern])['tp'].values.reshape(-1,1), discrete_features=[0]) for candidate_pattern in subset_handler.pattern_list for subset_handler.pattern_list in show_progress(subset_handler.pattern_list) if candidate_pattern not in selected_pattern_list}
+    redundancy_degree_score_dict = {candidate_pattern:mutual_info_classif(x1, subset_handler.evaluate_patterns_tp([*selected_pattern_list, candidate_pattern])['tp'].values.reshape(-1,1), discrete_features=[0]) for candidate_pattern in subset_handler.pattern_list if candidate_pattern not in selected_pattern_list}
     min_redundant_pattern, min_redundancy_degree_score = sorted(redundancy_degree_score_dict.items(), key=lambda x:x[-1])[0]
     return min_redundant_pattern, min_redundancy_degree_score
 
