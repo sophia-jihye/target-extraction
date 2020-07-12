@@ -117,11 +117,13 @@ def pattern_quality_estimation(domain, original_df, pattern_counter, pattern_han
         df.to_csv(filepath, index = False, encoding='utf-8-sig')
         print('Created %s' % filepath)
         
-    print('Merging csv files in %s for [%s]..' % (output_targets_dir, domain))
-    concat_df = merge_dfs(glob.glob(os.path.join(output_targets_dir, '%s_*.csv'%domain)))
     filepath = output_targets_concat_csv_filepath % domain
-    concat_df.to_csv(filepath, index = False, encoding='utf-8-sig')
-    print('Created %s' % filepath)
+    if os.path.exists(filepath): concat_df = pd.read_csv(filepath)
+    else:
+        print('Merging csv files in %s for [%s]..' % (output_targets_dir, domain))
+        concat_df = merge_dfs(glob.glob(os.path.join(output_targets_dir, '%s_*.csv'%domain)))
+        concat_df.to_csv(filepath, index = False, encoding='utf-8-sig')
+        print('Created %s' % filepath)
 
     concat_df['targets'] = concat_df.apply(lambda x: ast.literal_eval(x['targets']), axis=1)
     concat_df['predicted_targets'] = concat_df.apply(lambda x: ast.literal_eval(x['predicted_targets']), axis=1)
@@ -154,18 +156,19 @@ def evaluate_rule_set(original_df, selected_pattern_list, pattern_handler, depen
     f1_dis = calculate_f1(pre_dis,rec_dis)
     return f1_mul, f1_dis
 
+def show_progress(it, milestones=100):
+    for i, x in enumerate(it):
+        yield x
+        processed = i + 1
+        if processed % milestones == 0:
+            print('Processed %sth elements..' % processed)
+
 def pick_least_redundant_one_pattern(selected_pattern_list, subset_handler):
-    min_redundancy_degree_score, min_redundant_pattern = 999, None
+    print('Picking out the least redundant one pattern against %s.. ' % str(selected_pattern_list))
     x1 = subset_handler.evaluate_patterns_tp(selected_pattern_list)['tp'].values.reshape(-1,1)
-    for candidate_pattern in subset_handler.pattern_list:
-        if candidate_pattern in selected_pattern_list: continue
-        patterns2 = copy.deepcopy(selected_pattern_list)
-        patterns2.append(candidate_pattern)
-        x2 = subset_handler.evaluate_patterns_tp(patterns2)['tp'].values.reshape(-1,1)
-        redundancy_degree_score = mutual_info_classif(x1, x2, discrete_features=[0])
-        if redundancy_degree_score < min_redundancy_degree_score:
-            min_redundancy_degree_score = redundancy_degree_score
-            min_redundant_pattern = candidate_pattern
+    
+    redundancy_degree_score_dict = {candidate_pattern:mutual_info_classif(x1, subset_handler.evaluate_patterns_tp([*selected_pattern_list, candidate_pattern])['tp'].values.reshape(-1,1), discrete_features=[0]) for candidate_pattern in subset_handler.pattern_list for subset_handler.pattern_list in show_progress(subset_handler.pattern_list) if candidate_pattern not in selected_pattern_list}
+    min_redundant_pattern, min_redundancy_degree_score = sorted(redundancy_degree_score_dict.items(), key=lambda x:x[-1])[0]
     return min_redundant_pattern, min_redundancy_degree_score
 
 def pattern_subset_selection(domain, original_df, subset_handler, pattern_handler, dependency_handler):
