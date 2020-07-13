@@ -23,7 +23,7 @@ output_targets_dir = parameters.output_targets_dir
 output_targets_concat_csv_filepath = parameters.output_targets_concat_csv_filepath
 output_pattern_evaluation_csv_filepath = parameters.output_pattern_evaluation_csv_filepath
 output_subset_selection_log_filepath = parameters.output_subset_selection_log_filepath
-output_final_report_csv_filepath = parameters.output_final_report_csv_filepath
+output_target_extraction_report_csv_filepath = parameters.output_target_extraction_report_csv_filepath
 
 def match_opinion_words(content, opinion_word_lexicon):
     opinion_words = []
@@ -192,7 +192,7 @@ def pattern_subset_selection(domain, original_df, subset_handler, pattern_handle
     text_file.write(content)
     text_file.close()
     print('Created %s' % filepath)
-    return best_f1_mul, best_f1_dis, best_subset
+    return best_subset
 
 def save_pkl(item_to_save, filepath):
     with open(filepath, 'wb') as f:
@@ -204,6 +204,14 @@ def load_pkl(filepath):
         loaded_item = pickle.load(f)
     print('Loaded %s' % filepath)
     return loaded_item
+
+def start_csv(filepath):
+    f = open(filepath, 'w', encoding='utf-8-sig')
+    wr = csv.writer(f)
+    return f, wr
+
+def end_csv(f):
+    f.close()
 
 def main():
     pattern_handler = PatternHandler()
@@ -222,32 +230,37 @@ def main():
         raw_df['targets'] = raw_df.progress_apply(lambda x: pattern_handler.process_targets(x['content'], x['raw_targets']), axis=1) 
         save_pkl(raw_df, output_raw_df_pkl_filepath)
     
-    f = open(output_final_report_csv_filepath, 'w', encoding='utf-8-sig')
-    wr = csv.writer(f)  
-    wr.writerow(['Domain', 'Measure', 'All', 'Best subset'])
     for domain in raw_df['domain'].unique():
         print('Processing [%s]..' % domain)
         df = raw_df[raw_df['domain']==domain]
         
+        training_df, test_df = df, df   # NEED kfold
+        
+        # Training
         filepath = output_pattern_counter_pkl_filepath % domain
         if os.path.exists(filepath): pattern_counter = load_pkl(filepath)
         else: 
-            pattern_counter = pattern_extraction(domain, df, pattern_handler, dependency_handler)
+            pattern_counter = pattern_extraction(domain, training_df, pattern_handler, dependency_handler)
             save_pkl(pattern_counter, filepath)
         
-        predicted_targets_df, pattern_evaluation_df = pattern_quality_estimation(domain, df, pattern_counter, pattern_handler, dependency_handler)
+        predicted_targets_df, pattern_evaluation_df = pattern_quality_estimation(domain, training_df, pattern_counter, pattern_handler, dependency_handler)
         
         print('Calculating true positives for each sentence..')
         predicted_targets_df['tp'] = predicted_targets_df.progress_apply(lambda row: calculate_true_positive(row['predicted_targets'], row['targets']), axis=1)
         
         subset_handler = SubsetHandler(domain, predicted_targets_df, pattern_evaluation_df)
-        best_f1_mul, best_f1_dis, best_subset = pattern_subset_selection(domain, df, subset_handler, pattern_handler, dependency_handler)
+        best_subset = pattern_subset_selection(domain, training_df, subset_handler, pattern_handler, dependency_handler)
         
-        all_f1_mul, all_f1_dis = evaluate_rule_set(df, subset_handler.pattern_list, pattern_handler, dependency_handler)
+        # Test
+        filepath = output_target_extraction_report_csv_filepath % domain
+        f, wr = start_csv(filepath)
+        wr.writerow(['Domain', 'Measure', 'All', 'Best subset'])
+        best_f1_mul, best_f1_dis = evaluate_rule_set(test_df, best_subset, pattern_handler, dependency_handler)
+        all_f1_mul, all_f1_dis = evaluate_rule_set(test_df, subset_handler.pattern_list, pattern_handler, dependency_handler)
         wr.writerow([domain, 'F1 score (multiple)', '%.4f'%all_f1_mul, '%.4f'%best_f1_mul])
         wr.writerow([domain, 'F1 score (distinct)', '%.4f'%all_f1_dis, '%.4f'%best_f1_dis])
-    f.close()
-    print('Created %s' % output_final_report_csv_filepath)
+        end_csv(f)
+    print('Created %s' % filepath)
     
 def elapsed_time(start):
     end = time.time()
