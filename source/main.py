@@ -25,6 +25,7 @@ output_targets_dir = parameters.output_targets_dir
 output_targets_concat_csv_filepath = parameters.output_targets_concat_csv_filepath
 output_pattern_quality_estimation_csv_filepath = parameters.output_pattern_quality_estimation_csv_filepath
 output_subset_selection_log_filepath = parameters.output_subset_selection_log_filepath
+output_subset_pkl_filepath = parameters.output_subset_pkl_filepath
 output_target_extraction_report_csv_filepath = parameters.output_target_extraction_report_csv_filepath
 output_final_report_csv_filepath = parameters.output_final_report_csv_filepath
 
@@ -132,7 +133,7 @@ def pattern_quality_estimation(domain, k, original_df, pattern_counter, pattern_
     concat_df['targets'] = concat_df.apply(lambda x: ast.literal_eval(x['targets']), axis=1)
     concat_df['predicted_targets'] = concat_df.apply(lambda x: ast.literal_eval(x['predicted_targets']), axis=1)
     
-    print('Evaluating rules for [%s]..' % domain)
+    print('Evaluating rules for [%s k=%d]..' % (domain, k))
     filepath = output_pattern_quality_estimation_csv_filepath % (domain, k)
     if not os.path.exists(filepath): 
         f = open(filepath, 'w', encoding='utf-8-sig')
@@ -164,39 +165,48 @@ def pick_least_redundant_one_pattern(selected_pattern_list, subset_handler):
     print('Picking out the least redundant one pattern against %s.. ' % str(selected_pattern_list))
     x1 = subset_handler.evaluate_patterns_tp(selected_pattern_list)['tp'].values.reshape(-1,1)
     
-    redundancy_degree_score_dict = {candidate_pattern:mutual_info_classif(x1, subset_handler.evaluate_patterns_tp([*selected_pattern_list, candidate_pattern])['tp'].values.reshape(-1,1), discrete_features=[0]) for candidate_pattern in subset_handler.pattern_list if candidate_pattern not in selected_pattern_list}
-    min_redundant_pattern, min_redundancy_degree_score = sorted(redundancy_degree_score_dict.items(), key=lambda x:x[-1])[0]
+    redundancy_degree_score_df = pd.DataFrame([candidate_pattern for candidate_pattern in subset_handler.pattern_list if candidate_pattern not in selected_pattern_list], columns=['candidate_pattern'])
+    redundancy_degree_score_df['redundancy_score'] = redundancy_degree_score_df.parallel_apply(lambda row: mutual_info_classif(x1, subset_handler.evaluate_patterns_tp([*selected_pattern_list, row['candidate_pattern']])['tp'].values.reshape(-1,1), discrete_features=[0]), axis=1)
+    
+    min_row = redundancy_degree_score_df.sort_values(by='redundancy_score').iloc[0]
+    min_redundant_pattern = min_row['candidate_pattern']
+    min_redundancy_degree_score = min_row['redundancy_score']
+    
     return min_redundant_pattern, min_redundancy_degree_score
 
 def pattern_subset_selection(domain, k, original_df, subset_handler, pattern_handler, dependency_handler):
-    print('Processing subset selection for [%s]..' % domain)
+    print('Processing subset selection for [%s k=%d]..' % (domain, k))
     
-    filepath = output_subset_selection_log_filepath % (domain, k)
-    text_file = open(filepath, "w", encoding='utf-8')
-    
-    best_f1_mul, best_f1_dis, best_subset = 0, 0, []
-    selected_pattern_list = [subset_handler.pattern_list[0]]
-    f1_mul, f1_dis = evaluate_rule_set(original_df, selected_pattern_list, pattern_handler, dependency_handler)
-    content = "Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (str(selected_pattern_list), f1_mul, f1_dis)
-    print("[%s]Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(selected_pattern_list), f1_mul, f1_dis))
-    while f1_mul > best_f1_mul:
-        best_f1_mul, best_f1_dis, best_subset = f1_mul, f1_dis, copy.deepcopy(selected_pattern_list)
-
-        min_redundant_pattern, mi_score = pick_least_redundant_one_pattern(selected_pattern_list, subset_handler)
-        content += "\nLeast redundant pattern = %s [Redundancy score (MI score) = %.4f]" % (min_redundant_pattern, mi_score)
-        print("[%s]Least redundant pattern = %s [Redundancy score (MI score) = %.4f]" % (domain, min_redundant_pattern, mi_score))
-        selected_pattern_list.append(min_redundant_pattern)
+    pkl_filepath = output_subset_pkl_filepath % (domain, k)
+    if os.path.exists(pkl_filepath): best_subset = load_pkl(pkl_filepath)
+    else:
+        best_f1_mul, best_f1_dis, best_subset = 0, 0, []
+        selected_pattern_list = [subset_handler.pattern_list[0]]
         f1_mul, f1_dis = evaluate_rule_set(original_df, selected_pattern_list, pattern_handler, dependency_handler)
-        content += "\n\nSelected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (str(selected_pattern_list), f1_mul, f1_dis)
+        content = "Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (str(selected_pattern_list), f1_mul, f1_dis)
         print("[%s]Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(selected_pattern_list), f1_mul, f1_dis))
+        while f1_mul > best_f1_mul:
+            best_f1_mul, best_f1_dis, best_subset = f1_mul, f1_dis, copy.deepcopy(selected_pattern_list)
+
+            min_redundant_pattern, mi_score = pick_least_redundant_one_pattern(selected_pattern_list, subset_handler)
+            content += "\nLeast redundant pattern = %s [Redundancy score (MI score) = %.4f]" % (min_redundant_pattern, mi_score)
+            print("[%s]Least redundant pattern = %s [Redundancy score (MI score) = %.4f]" % (domain, min_redundant_pattern, mi_score))
+            selected_pattern_list.append(min_redundant_pattern)
+            f1_mul, f1_dis = evaluate_rule_set(original_df, selected_pattern_list, pattern_handler, dependency_handler)
+            content += "\n\nSelected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (str(selected_pattern_list), f1_mul, f1_dis)
+            print("[%s]Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(selected_pattern_list), f1_mul, f1_dis))
+
+            if len(selected_pattern_list) == len(subset_handler.pattern_list): break
+
+        content += "\n\n<Best> Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (str(best_subset), best_f1_mul, best_f1_dis)
+        print("[%s]<Best> Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(best_subset), best_f1_mul, best_f1_dis))
         
-        if len(selected_pattern_list) == len(subset_handler.pattern_list): break
-        
-    content += "\n\n<Best> Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (str(best_subset), best_f1_mul, best_f1_dis)
-    print("[%s]<Best> Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(best_subset), best_f1_mul, best_f1_dis))
-    text_file.write(content)
-    text_file.close()
-    print('Created %s' % filepath)
+        filepath = output_subset_selection_log_filepath % (domain, k)
+        text_file = open(filepath, "w", encoding='utf-8')
+        text_file.write(content)
+        text_file.close()
+        print('Created %s' % filepath)
+        save_pkl(best_subset, pkl_filepath)
     return best_subset
 
 def save_pkl(item_to_save, filepath):

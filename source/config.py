@@ -5,7 +5,8 @@ import multiprocessing as mp
 # system configuration
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 base_output_dir = os.path.join(base_dir, 'output')
-output_dir = os.path.join(base_dir, 'output', datetime.now().strftime("%Y%m%d-%H-%M-%S"))
+#output_dir = os.path.join(base_dir, 'output', datetime.now().strftime("%Y%m%d-%H-%M-%S"))
+output_dir = os.path.join(base_dir, 'output', '20200713-17-03-18')
 #output_dir = os.path.join(base_dir, 'output', 'preliminary')
 output_err_dir = os.path.join(output_dir, 'err')
 output_training_dir = os.path.join(output_dir, 'training')
@@ -35,10 +36,11 @@ class Parameters:
         self.output_error_csv_filepath = os.path.join(output_training_dir, '[%s][k=%d]error_%d_%d.csv')
         self.output_pattern_csv_filepath = os.path.join(output_training_dir, '[%s][k=%d]patterns_%d.csv')
         self.output_pattern_quality_estimation_csv_filepath = os.path.join(output_training_dir, '[%s][k=%d]pattern_quality_estimation.csv')
-        self.output_subset_selection_log_filepath = os.path.join(output_training_dir, '[%s][k=%d]subset_selection.log')
         self.output_target_log_csv_filepath = os.path.join(output_targets_dir, '%s_k=%d_%02d_%s.csv')
         self.output_targets_concat_csv_filepath = os.path.join(output_save_dir, '[%s][k=%d]targets.csv')
         self.output_pattern_counter_pkl_filepath = os.path.join(output_save_dir, '[%s][k=%d]pattern_counter.pkl')
+        self.output_subset_selection_log_filepath = os.path.join(output_training_dir, '[%s][k=%d]subset_selection.log')
+        self.output_subset_pkl_filepath = os.path.join(output_save_dir, '[%s][k=%d]subset.pkl')
         self.output_target_extraction_report_csv_filepath = os.path.join(output_test_dir, '[%s][k=%d]target_extraction_report.csv')
         self.output_final_report_csv_filepath = os.path.join(output_dir, 'final_report.csv')
         self.num_cpus = 10
