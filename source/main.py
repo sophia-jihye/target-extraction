@@ -50,6 +50,7 @@ def save_extracted_pattern_results(domain, k, pattern_counter, err_list):
     print('Created %s' % filepath)
 
 def pattern_extraction(domain, k, df, pattern_handler, dependency_handler):
+    print('[%s k=%d]' % (domain, k))
     pattern_counter, err_list = defaultdict(int), list()
     pattern_handler.extract_patterns(df, pattern_counter, err_list, dependency_handler)
     
