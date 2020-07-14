@@ -20,6 +20,7 @@ output_pattern_csv_filepath = parameters.output_pattern_csv_filepath
 output_error_csv_filepath = parameters.output_error_csv_filepath
 output_target_log_csv_filepath = parameters.output_target_log_csv_filepath
 output_raw_df_pkl_filepath = parameters.output_raw_df_pkl_filepath
+output_training_test_dfs_pkl_filepath = parameters.output_training_test_dfs_pkl_filepath
 output_pattern_counter_pkl_filepath = parameters.output_pattern_counter_pkl_filepath
 output_targets_dir = parameters.output_targets_dir
 output_targets_concat_csv_filepath = parameters.output_targets_concat_csv_filepath
@@ -250,11 +251,17 @@ def main():
         print('Processing [%s]..' % domain)
         df = raw_df[raw_df['domain']==domain]
         
-        training_dfs, test_dfs = [], []
-        for train_indices, test_indices in kf.split(df):
-            training_df, test_df = df.iloc[train_indices], df.iloc[test_indices]
-            training_dfs.append(training_df)
-            test_dfs.append(test_df)
+        if os.path.exists(output_training_test_dfs_pkl_filepath): 
+            training_test_dfs = load_pkl(output_training_dfs_pkl_filepath)
+            training_dfs, test_dfs = training_test_dfs[0], training_test_dfs[1]
+        else:
+            training_dfs, test_dfs = [], []
+            for train_indices, test_indices in kf.split(df):
+                training_df, test_df = df.iloc[train_indices], df.iloc[test_indices]
+                training_dfs.append(training_df)
+                test_dfs.append(test_df)
+            training_test_dfs = [training_dfs, test_dfs]
+            save_pkl(training_test_dfs, output_training_test_dfs_pkl_filepath)
         
         for k in range(len(training_dfs)):
             training_df, test_df = training_dfs[k], test_dfs[k]
