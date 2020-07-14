@@ -252,7 +252,7 @@ def main():
         df = raw_df[raw_df['domain']==domain]
         
         if os.path.exists(output_training_test_dfs_pkl_filepath): 
-            training_test_dfs = load_pkl(output_training_dfs_pkl_filepath)
+            training_test_dfs = load_pkl(output_training_test_dfs_pkl_filepath)
             training_dfs, test_dfs = training_test_dfs[0], training_test_dfs[1]
         else:
             training_dfs, test_dfs = [], []
