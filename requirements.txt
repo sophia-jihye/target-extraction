@@ -174,7 +174,7 @@ progressbar==2.5
 progressbar2==3.39.2
 prompt-toolkit==1.0.15
 protobuf==3.6.1
-psutil==5.0.1
+psutil==5.6.6
 ptyprocess==0.5.1
 py==1.4.32
 pyasn1==0.1.9
