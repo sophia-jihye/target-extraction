@@ -3,14 +3,15 @@
 ## `source`: Shortest path in a dependency graph
 
 ### Environment
+* Ubuntu 16.04
 * Python 3.7.0
 
 ### Setup
 `pip install -r requirements.txt`
 ```python
 import stanfordnlp, nltk
-nltk.download()
 stanfordnlp.download('en')
+nltk.download('averaged_perceptron_tagger')
 ```
 
 ### Dataset description

@@ -29,6 +29,7 @@ class Parameters:
         self.lexicon_filepath = os.path.join(base_dir, 'data', 'parsed', 'lexicon_6788.json')
         self.output_dir = output_dir
         self.output_targets_dir = output_targets_dir
+        self.output_test_dir = output_test_dir
         self.parameters_json_filepath = parameters_json_filepath
         self.output_time_txt_filepath = os.path.join(output_dir, 'elapsed_time.txt')
         self.errlog_filepath = os.path.join(output_err_dir, '%s.log' % (datetime.now().strftime("%Y%m%d-%H-%M-%S")))
