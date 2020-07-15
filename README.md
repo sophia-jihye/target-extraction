@@ -2,6 +2,9 @@
 
 ## `source`: Shortest path in a dependency graph
 
+### Environment
+* Python 3.7.0
+
 ### Setup
 `pip install -r requirements.txt`
 ```python
