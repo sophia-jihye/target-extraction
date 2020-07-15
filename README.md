@@ -2,6 +2,14 @@
 
 ## `source`: Shortest path in a dependency graph
 
+### Setup
+`pip install -r requirements.txt`
+```python
+import stanfordnlp, nltk
+nltk.download()
+stanfordnlp.download('en')
+```
+
 ### Dataset description
 | Data |     Product     | # of Sentences | # of Aspects |
 |:----:|:---------------:|:--------------:|-------------:|
