@@ -2,6 +2,11 @@ import os, json
 from datetime import datetime
 import multiprocessing as mp
 
+domains = ['MP3 player', 'DVD player', 'Digital camera2', 'Cell phone', 'Digital camera1', 'Wireless router', 'Speaker', 'Computer']
+#domains = ['Digital camera1', 'Digital camera2', 'Cell phone']
+#domains = ['Wireless router', 'Speaker']
+#domains = ['DVD player', 'Computer']
+
 # system configuration
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 base_output_dir = os.path.join(base_dir, 'output')
@@ -33,6 +38,7 @@ class Parameters:
         self.parameters_json_filepath = parameters_json_filepath
         self.output_time_txt_filepath = os.path.join(output_dir, 'elapsed_time.txt')
         self.errlog_filepath = os.path.join(output_err_dir, '%s.log' % (datetime.now().strftime("%Y%m%d-%H-%M-%S")))
+        self.domains = domains
         self.output_raw_df_pkl_filepath = os.path.join(output_save_dir, 'raw_df.pkl')
         self.output_training_test_dfs_pkl_filepath = os.path.join(output_save_dir, '[%s]training_test_dfs.pkl')
         self.output_error_csv_filepath = os.path.join(output_training_dir, '[%s][k=%d]error_%d_%d.csv')

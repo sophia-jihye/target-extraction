@@ -13,6 +13,8 @@ tqdm.pandas()
 from pandarallel import pandarallel
 pandarallel.initialize(nb_workers=parameters.num_cpus, progress_bar=True)
 
+domains = parameters.domains
+
 data_filepath = parameters.data_filepath
 lexicon_filepath = parameters.lexicon_filepath
 output_time_txt_filepath = parameters.output_time_txt_filepath
@@ -248,7 +250,7 @@ def main():
         raw_df['targets'] = raw_df.progress_apply(lambda x: pattern_handler.process_targets(x['content'], x['raw_targets']), axis=1) 
         save_pkl(raw_df, output_raw_df_pkl_filepath)
     
-    for domain in raw_df['domain'].unique():
+    for domain in domains:   # raw_df['domain'].unique()
         print('Processing [%s]..' % domain)
         df = raw_df[raw_df['domain']==domain]
         
