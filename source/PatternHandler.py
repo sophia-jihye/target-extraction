@@ -79,3 +79,17 @@ class PatternHandler:
             targets = list(targets)
             targets = self.leave_noun_only(targets)
         return list(set(targets))
+    
+    def extract_targets_dp(self, double_propagation, doc, opinion_words, predicted_targets=[]):
+        if len(predicted_targets) > 0: 
+            targets = predicted_targets
+        else:
+            targets = set()
+            for sentence_from_doc in doc.sentences:
+                sentence_graph = DependencyGraph(sentence_from_doc)
+                targets.update(double_propagation.extract_targets_R11(opinion_words, sentence_graph.token2indices, sentence_graph.nodes))
+                targets.update(double_propagation.extract_targets_R12(opinion_words, sentence_graph.token2indices, sentence_graph.nodes))
+
+            targets = list(targets)
+            targets = self.leave_noun_only(targets)
+        return list(set(targets))
