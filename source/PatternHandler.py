@@ -58,7 +58,7 @@ class PatternHandler:
                     if o_word == t_word: continue
                         
                     try: 
-                        extracted_patterns = dependency_handler.extract_patterns(sentence_graph.token2idx, sentence_graph.nodes, sentence_graph.graph, sentence_graph.token2tagdep, o_word, t_word)
+                        extracted_patterns = dependency_handler.extract_patterns(sentence_graph.token2indices, sentence_graph.nodes, sentence_graph.graph, sentence_graph.token2tagdep, o_word, t_word)
                         pattern_counter['-'.join([dep_rel for token, pos, dep_rel in extracted_patterns if dep_rel != 'root'])] += 1
                         parse_error = False
                     except: parse_error = True
@@ -74,7 +74,7 @@ class PatternHandler:
             targets = set()
             for sentence_from_doc in doc.sentences:
                 sentence_graph = DependencyGraph(sentence_from_doc)
-                targets.update(dependency_handler.extract_targets_using_pattern(sentence_graph.token2idx, sentence_graph.nodes, opinion_words, dep_rels))
+                targets.update(dependency_handler.extract_targets_using_pattern(sentence_graph.token2indices, sentence_graph.nodes, opinion_words, dep_rels))
 
             targets = list(targets)
             targets = self.leave_noun_only(targets)

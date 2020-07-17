@@ -5,7 +5,7 @@ Node = namedtuple("Node", ["idx", "token", "pos", "dep", "governor"])
 class DependencyGraph:
     def __init__(self, sentence_from_doc):
         self.word_objects = sentence_from_doc.words
-        self.token2idx, self.nodes = self.parse_sentence(sentence_from_doc)
+        self.token2indices, self.nodes = self.parse_sentence(sentence_from_doc)
         self.edges, self.graph, self.token2tagdep = self.create_graph(sentence_from_doc)
     
     def governor2idx(self, old_idx):
@@ -14,13 +14,13 @@ class DependencyGraph:
         return old_idx -1
     
     def parse_sentence(self, sentence_from_doc):
-        token2idx, nodes = defaultdict(lambda: []), []
+        token2indices, nodes = defaultdict(lambda: []), []
         parsed_sent = sentence_from_doc.dependencies
         for i in range(len(parsed_sent)):
-            token2idx[parsed_sent[i][2].text].append(i)
+            token2indices[parsed_sent[i][2].text].append(i)
             node = Node(i, parsed_sent[i][2].text, parsed_sent[i][2].xpos, parsed_sent[i][2].dependency_relation, self.governor2idx(parsed_sent[i][2].governor))
             nodes.append(node)
-        return token2idx, nodes
+        return token2indices, nodes
     
     def create_graph(self, sentence_from_doc):
         edges = []
