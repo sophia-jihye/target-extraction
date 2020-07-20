@@ -230,7 +230,7 @@ def main():
             filepath = output_target_extraction_report_csv_filepath % (domain, k)
             f, wr = start_csv(filepath)
             wr.writerow(['Domain', 'Measure', 'All', 'Best subset'])
-            best_pre_mul, best_rec_mul, best_f1_mul, best_f1_dis = evaluate_rule_set(test_df, best_subset, pattern_handler, dependency_handler)
+            best_pre_mul, best_rec_mul, best_f1_mul, _ = evaluate_rule_set(test_df, best_subset, pattern_handler, dependency_handler)
             all_pre_mul, all_rec_mul, all_f1_mul, all_f1_dis = evaluate_rule_set(test_df, subset_handler.pattern_list, pattern_handler, dependency_handler)
             wr.writerow([domain, 'Precision (multiple)', '%.4f'%all_pre_mul, '%.4f'%best_pre_mul])
             wr.writerow([domain, 'Recall (multiple)', '%.4f'%all_rec_mul, '%.4f'%best_rec_mul])
