@@ -15,6 +15,8 @@ from pandarallel import pandarallel
 pandarallel.initialize(nb_workers=parameters.num_cpus, progress_bar=True)
 
 domains = parameters.domains
+min_pattern_count = parameters.min_pattern_count
+min_pattern_f1 = parameters.min_pattern_f1
 
 data_filepath = parameters.data_filepath
 lexicon_filepath = parameters.lexicon_filepath
@@ -137,7 +139,7 @@ def pick_least_redundant_one_pattern(selected_pattern_list, subset_handler):
     
     return min_redundant_pattern, min_redundancy_degree_score
 
-def pattern_subset_selection(domain, k, original_df, subset_handler, pattern_handler, dependency_handler, end_condition='F1', end_condition_mi_score=1):
+def pattern_subset_selection(domain, k, original_df, subset_handler, pattern_handler, dependency_handler):
     print('Processing subset selection for [%s k=%d]..' % (domain, k))
     
     pkl_filepath = output_subset_pkl_filepath % (domain, k)
@@ -160,8 +162,7 @@ def pattern_subset_selection(domain, k, original_df, subset_handler, pattern_han
             print("[%s]Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(selected_pattern_list), f1_mul, f1_dis))
 
             if len(selected_pattern_list) == len(subset_handler.pattern_list): break
-            if end_condition == 'F1' and f1_mul < best_f1_mul: break
-            if end_condition == 'MI' and mi_score > end_condition_mi_score: break
+            if f1_mul < best_f1_mul: break
 
         content += "\n\n<Best> Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (str(best_subset), best_f1_mul, best_f1_dis)
         print("[%s]<Best> Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(best_subset), best_f1_mul, best_f1_dis))
@@ -218,57 +219,39 @@ def main():
                 pattern_counter = pattern_extraction(domain, k, training_df, pattern_handler, dependency_handler)
                 save_pkl(pattern_counter, filepath)
             
+            pattern_counter = {k:v for k,v in pattern_counter.items() if v > min_pattern_count}
             predicted_targets_df, pattern_evaluation_df = pattern_quality_estimation(domain, k, training_df, pattern_counter, pattern_handler, dependency_handler)
+            pattern_evaluation_df = pattern_evaluation_df[pattern_evaluation_df['f1_multiple']>min_pattern_f1]
 
             print('Calculating true positives for each sentence..')
             predicted_targets_df['tp'] = predicted_targets_df.progress_apply(lambda row: calculate_true_positive(row['predicted_targets'], row['targets']), axis=1)
 
             subset_handler = SubsetHandler(domain, predicted_targets_df, pattern_evaluation_df)
             best_subset = pattern_subset_selection(domain, k, training_df, subset_handler, pattern_handler, dependency_handler)
-            
-            best_subset_mi5 = pattern_subset_selection(domain, k, training_df, subset_handler, pattern_handler, dependency_handler, end_condition='MI', end_condition_mi_score=0.5)
-            best_subset_mi6 = pattern_subset_selection(domain, k, training_df, subset_handler, pattern_handler, dependency_handler, end_condition='MI', end_condition_mi_score=0.6)
-            best_subset_mi7 = pattern_subset_selection(domain, k, training_df, subset_handler, pattern_handler, dependency_handler, end_condition='MI', end_condition_mi_score=0.7)
-            best_subset_mi8 = pattern_subset_selection(domain, k, training_df, subset_handler, pattern_handler, dependency_handler, end_condition='MI', end_condition_mi_score=0.8)
 
             # Test
             filepath = output_target_extraction_report_csv_filepath % (domain, k)
             f, wr = start_csv(filepath)
-            wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)', 'Best subset (MI 0.5)', 'Best subset (MI 0.6)', 'Best subset (MI 0.7)', 'Best subset (MI 0.8)'])
+            wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)'])
             all_pre_mul, all_rec_mul, all_f1_mul, all_f1_dis = evaluate_rule_set(test_df, subset_handler.pattern_list, pattern_handler, dependency_handler)
             best_pre_mul, best_rec_mul, best_f1_mul, _ = evaluate_rule_set(test_df, best_subset, pattern_handler, dependency_handler)
-            best_pre_mul_mi5, best_rec_mul_mi5, best_f1_mul_mi5, _ = evaluate_rule_set(test_df, best_subset_mi5, pattern_handler, dependency_handler)
-            best_pre_mul_mi6, best_rec_mul_mi6, best_f1_mul_mi6, _ = evaluate_rule_set(test_df, best_subset_mi6, pattern_handler, dependency_handler)
-            best_pre_mul_mi7, best_rec_mul_mi7, best_f1_mul_mi7, _ = evaluate_rule_set(test_df, best_subset_mi7, pattern_handler, dependency_handler)
-            best_pre_mul_mi8, best_rec_mul_mi8, best_f1_mul_mi8, _ = evaluate_rule_set(test_df, best_subset_mi8, pattern_handler, dependency_handler)
-            wr.writerow([domain, 'Precision', '%.4f'%all_pre_mul, '%.4f'%best_pre_mul, '%.4f'%best_pre_mul_mi5, '%.4f'%best_pre_mul_mi6, '%.4f'%best_pre_mul_mi7, '%.4f'%best_pre_mul_mi8])
-            wr.writerow([domain, 'Recall', '%.4f'%all_rec_mul, '%.4f'%best_rec_mul, '%.4f'%best_rec_mul_mi5, '%.4f'%best_rec_mul_mi6, '%.4f'%best_rec_mul_mi7, '%.4f'%best_rec_mul_mi8])
-            wr.writerow([domain, 'F1 score', '%.4f'%all_f1_mul, '%.4f'%best_f1_mul, '%.4f'%best_f1_mul_mi5, '%.4f'%best_f1_mul_mi6, '%.4f'%best_f1_mul_mi7, '%.4f'%best_f1_mul_mi8])
+            
+            wr.writerow([domain, 'Precision', '%.4f'%all_pre_mul, '%.4f'%best_pre_mul])
+            wr.writerow([domain, 'Recall', '%.4f'%all_rec_mul, '%.4f'%best_rec_mul])
+            wr.writerow([domain, 'F1 score', '%.4f'%all_f1_mul, '%.4f'%best_f1_mul])
             kfold_results['_'.join([domain, 'Precision', 'All'])].append(all_pre_mul)
             kfold_results['_'.join([domain, 'Precision', 'Best subset (F1)'])].append(best_pre_mul)
-            kfold_results['_'.join([domain, 'Precision', 'Best subset (MI 0.5)'])].append(best_pre_mul_mi5)
-            kfold_results['_'.join([domain, 'Precision', 'Best subset (MI 0.6)'])].append(best_pre_mul_mi6)
-            kfold_results['_'.join([domain, 'Precision', 'Best subset (MI 0.7)'])].append(best_pre_mul_mi7)
-            kfold_results['_'.join([domain, 'Precision', 'Best subset (MI 0.8)'])].append(best_pre_mul_mi8)
             kfold_results['_'.join([domain, 'Recall', 'All'])].append(all_rec_mul)
             kfold_results['_'.join([domain, 'Recall', 'Best subset (F1)'])].append(best_rec_mul)
-            kfold_results['_'.join([domain, 'Recall', 'Best subset (MI 0.5)'])].append(best_rec_mul_mi5)
-            kfold_results['_'.join([domain, 'Recall', 'Best subset (MI 0.6)'])].append(best_rec_mul_mi6)
-            kfold_results['_'.join([domain, 'Recall', 'Best subset (MI 0.7)'])].append(best_rec_mul_mi7)
-            kfold_results['_'.join([domain, 'Recall', 'Best subset (MI 0.8)'])].append(best_rec_mul_mi8)
             kfold_results['_'.join([domain, 'F1 score', 'All'])].append(all_f1_mul)
             kfold_results['_'.join([domain, 'F1 score', 'Best subset (F1)'])].append(best_f1_mul)
-            kfold_results['_'.join([domain, 'F1 score', 'Best subset (MI 0.5)'])].append(best_f1_mul_mi5)
-            kfold_results['_'.join([domain, 'F1 score', 'Best subset (MI 0.6)'])].append(best_f1_mul_mi6)
-            kfold_results['_'.join([domain, 'F1 score', 'Best subset (MI 0.7)'])].append(best_f1_mul_mi7)
-            kfold_results['_'.join([domain, 'F1 score', 'Best subset (MI 0.8)'])].append(best_f1_mul_mi8)
             end_csv(f, filepath)
     
     f, wr = start_csv(output_final_report_csv_filepath)
-    wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)', 'Best subset (MI 0.5)', 'Best subset (MI 0.6)', 'Best subset (MI 0.7)', 'Best subset (MI 0.8)'])
+    wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)'])
     for domain in raw_df['domain'].unique():
         for measure in ['Precision', 'Recall', 'F1 score']:
-            wr.writerow([domain, measure, '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'All'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Best subset (F1)'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Best subset (MI 0.5)'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Best subset (MI 0.6)'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Best subset (MI 0.7)'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Best subset (MI 0.8)'])])])
+            wr.writerow([domain, measure, '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'All'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Best subset (F1)'])])])
     end_csv(f, output_final_report_csv_filepath)
     
 def elapsed_time(start):
