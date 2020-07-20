@@ -74,8 +74,6 @@ def pattern_quality_estimation(domain, k, original_df, pattern_counter, pattern_
         idx += 1
         filepath = output_target_log_csv_filepath % (domain, k, pattern_count, one_flattened_dep_rels)
         if os.path.exists(filepath): continue
-        filepath = filepath.replace(':', '_')   # 'acl:relcl' <=> 'acl_relcl'
-        if os.path.exists(filepath): continue
         print('[%d/%d]Extracting targets by pattern %s' % (idx, len(pattern_counter.keys()), one_flattened_dep_rels))
         dep_rels = one_flattened_dep_rels.split('-')
         df = copy.deepcopy(original_df)
