@@ -21,6 +21,8 @@ def end_csv(f, filepath):
     print('Created %s' % filepath)
 
 def calculate_true_positive(predicted_list, correct_list):
+    predicted_list = [item for item in predicted_list if item != '']
+    correct_list = [item for item in correct_list if item != '']
     tp = 0
     for predicted_compound_target in predicted_list:
         if predicted_compound_target in correct_list:   # 'screen' <- predicted 'screen'

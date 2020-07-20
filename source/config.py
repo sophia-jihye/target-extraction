@@ -3,9 +3,6 @@ from datetime import datetime
 import multiprocessing as mp
 
 domains = ['MP3 player', 'DVD player', 'Digital camera2', 'Cell phone', 'Digital camera1', 'Wireless router', 'Speaker', 'Computer']
-#domains = ['Digital camera1', 'Digital camera2', 'Cell phone']
-#domains = ['Wireless router', 'Speaker']
-#domains = ['DVD player', 'Computer']
 
 # system configuration
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
