@@ -7,9 +7,8 @@ domains = ['MP3 player', 'DVD player', 'Digital camera2', 'Cell phone', 'Digital
 # system configuration
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 base_output_dir = os.path.join(base_dir, 'output')
-#output_dir = os.path.join(base_dir, 'output', datetime.now().strftime("%Y%m%d-%H-%M-%S"))
-output_dir = os.path.join(base_dir, 'output', '20200716-10-07-00')
-#output_dir = os.path.join(base_dir, 'output', 'preliminary')
+output_dir = os.path.join(base_dir, 'output', datetime.now().strftime("%Y%m%d-%H-%M-%S"))
+output_dir = os.path.join(base_dir, 'output', '20200720-18-09-32')
 output_err_dir = os.path.join(output_dir, 'err')
 output_training_dir = os.path.join(output_dir, 'training')
 output_test_dir = os.path.join(output_dir, 'test')
