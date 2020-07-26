@@ -8,13 +8,13 @@ parser.add_argument('--min_pattern_count', type=int, default=0)
 parser.add_argument('--min_pattern_f1', type=float, default=0.0)
 args = parser.parse_args()
 
-domains = ['Cell phone', 'MP3 player', 'DVD player']
-#domains = ['Digital camera1', 'Digital camera2', 'Cell phone', 'MP3 player', 'DVD player', 'Computer', 'Wireless router', 'Speaker']
+domains = ['Cell phone']   
+#domains = ['Cell phone', 'MP3 player', 'DVD player', 'Digital camera1', 'Digital camera2', 'Computer', 'Wireless router', 'Speaker']
 
 # system configuration
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 base_output_dir = os.path.join(base_dir, 'output')
-output_dir = os.path.join(base_dir, 'output', 'Type1+Type2')   # datetime.now().strftime("%Y%m%d-%H-%M-%S")
+output_dir = os.path.join(base_dir, 'output', '20200726-18-15-32')   # datetime.now().strftime("%Y%m%d-%H-%M-%S")
 output_err_dir = os.path.join(output_dir, 'err')
 output_training_dir = os.path.join(output_dir, 'training')
 output_test_dir = os.path.join(output_dir, 'test_count=%d_f1=%d_domain%d'% (args.min_pattern_count, args.min_pattern_f1, len(domains)))

@@ -95,7 +95,7 @@ def pattern_quality_estimation(domain, k, pattern_type, original_df, pattern_cou
     if os.path.exists(filepath): concat_df = pd.read_csv(filepath)
     else:
         print('Merging csv files in %s for [%s]..' % (output_targets_dir, domain))
-        concat_df = merge_dfs(glob.glob(os.path.join(output_targets_dir, '%s_k=%d_*.csv' % (domain, k))))
+        concat_df = merge_dfs(glob.glob(os.path.join(output_targets_dir, '%s_k=%d_%s*.csv' % (domain, k, pattern_type))))
         concat_df.to_csv(filepath, index = False, encoding='utf-8-sig')
         print('Created %s' % filepath)
 
@@ -218,8 +218,8 @@ def main():
             training_df, test_df = training_dfs[k], test_dfs[k]
         
             # Training
-            whole_patterns = []
-            for pattern_type in ['ot', 'tt']:
+            whole_patterns, top_3_patterns, top_5_patterns, top_10_patterns = [], [], [], []
+            for pattern_type in ['ot']:   # , 'tt'
                 filepath = output_pattern_counter_pkl_filepath % (domain, k, pattern_type)
                 if os.path.exists(filepath): pattern_counter = load_pkl(filepath)
                 else: 
@@ -235,32 +235,58 @@ def main():
 
                 subset_handler = SubsetHandler(domain, predicted_targets_df, pattern_evaluation_df)
                 whole_patterns.extend(subset_handler.pattern_list)
+                top_3_patterns.extend(subset_handler.pattern_list[:3])
+                top_5_patterns.extend(subset_handler.pattern_list[:5])
+                top_10_patterns.extend(subset_handler.pattern_list[:])
                 if pattern_type == 'ot': best_subset = [subset_handler.pattern_list[0]]
                 best_subset = pattern_subset_selection(domain, k, pattern_type, best_subset, training_df, subset_handler, pattern_handler, dependency_handler)
 
             # Test
             filepath = output_target_extraction_report_csv_filepath % (domain, k)
             f, wr = start_csv(filepath)
-            wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)'])
+            wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)', 'Top3 F1', 'Top5 F1', 'Top10 F1'])
+            
             all_pre_mul, all_rec_mul, all_f1_mul, all_f1_dis = evaluate_rule_set(test_df, whole_patterns, pattern_handler, dependency_handler)
             best_pre_mul, best_rec_mul, best_f1_mul, _ = evaluate_rule_set(test_df, best_subset, pattern_handler, dependency_handler)
+            top3_pre_mul, top3_rec_mul, top3_f1_mul, top3_f1_dis = evaluate_rule_set(test_df, top_3_patterns, pattern_handler, dependency_handler)
+            top5_pre_mul, top5_rec_mul, top5_f1_mul, top5_f1_dis = evaluate_rule_set(test_df, top_5_patterns, pattern_handler, dependency_handler)
+            top10_pre_mul, top10_rec_mul, top10_f1_mul, top10_f1_dis = evaluate_rule_set(test_df, top_10_patterns, pattern_handler, dependency_handler)
             
-            wr.writerow([domain, 'Precision', '%.4f'%all_pre_mul, '%.4f'%best_pre_mul])
-            wr.writerow([domain, 'Recall', '%.4f'%all_rec_mul, '%.4f'%best_rec_mul])
-            wr.writerow([domain, 'F1 score', '%.4f'%all_f1_mul, '%.4f'%best_f1_mul])
+            wr.writerow([domain, 'Precision', '%.4f'%all_pre_mul, '%.4f'%best_pre_mul, '%.4f'%top3_pre_mul, '%.4f'%top5_pre_mul, '%.4f'%top10_pre_mul])
+            wr.writerow([domain, 'Recall', '%.4f'%all_rec_mul, '%.4f'%best_rec_mul, '%.4f'%top3_rec_mul, '%.4f'%top5_rec_mul, '%.4f'%top10_rec_mul])
+            wr.writerow([domain, 'F1 score', '%.4f'%all_f1_mul, '%.4f'%best_f1_mul, '%.4f'%top3_f1_mul, '%.4f'%top5_f1_mul, '%.4f'%top10_f1_mul])
+            wr.writerow([domain, 'Rules', '%d'%len(whole_patterns), '%s'%str(best_subset), '%s'%str(top_3_patterns), '%s'%str(top_5_patterns), '%s'%str(top_10_patterns)])
+            
             kfold_results['_'.join([domain, 'Precision', 'All'])].append(all_pre_mul)
             kfold_results['_'.join([domain, 'Precision', 'Best subset (F1)'])].append(best_pre_mul)
+            kfold_results['_'.join([domain, 'Precision', 'Top3 F1'])].append(top3_pre_mul)
+            kfold_results['_'.join([domain, 'Precision', 'Top5 F1'])].append(top5_pre_mul)
+            kfold_results['_'.join([domain, 'Precision', 'Top10 F1'])].append(top10_pre_mul)
+            
             kfold_results['_'.join([domain, 'Recall', 'All'])].append(all_rec_mul)
             kfold_results['_'.join([domain, 'Recall', 'Best subset (F1)'])].append(best_rec_mul)
+            kfold_results['_'.join([domain, 'Recall', 'Top3 F1'])].append(top3_rec_mul)
+            kfold_results['_'.join([domain, 'Recall', 'Top5 F1'])].append(top5_rec_mul)
+            kfold_results['_'.join([domain, 'Recall', 'Top10 F1'])].append(top10_rec_mul)
+            
             kfold_results['_'.join([domain, 'F1 score', 'All'])].append(all_f1_mul)
             kfold_results['_'.join([domain, 'F1 score', 'Best subset (F1)'])].append(best_f1_mul)
+            kfold_results['_'.join([domain, 'F1 score', 'Top3 F1'])].append(top3_f1_mul)
+            kfold_results['_'.join([domain, 'F1 score', 'Top5 F1'])].append(top5_f1_mul)
+            kfold_results['_'.join([domain, 'F1 score', 'Top10 F1'])].append(top10_f1_mul)
+            
+            kfold_results['_'.join([domain, 'Rules', 'All'])].append(len(whole_patterns))
+            kfold_results['_'.join([domain, 'Rules', 'Best subset (F1)'])].append(len(best_subset))
+            kfold_results['_'.join([domain, 'Rules', 'Top3 F1'])].append(len(top_3_patterns))
+            kfold_results['_'.join([domain, 'Rules', 'Top5 F1'])].append(len(top_5_patterns))
+            kfold_results['_'.join([domain, 'Rules', 'Top10 F1'])].append(len(top_10_patterns))
             end_csv(f, filepath)
     
     f, wr = start_csv(output_final_report_csv_filepath)
-    wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)'])
-    for domain in raw_df['domain'].unique():
-        for measure in ['Precision', 'Recall', 'F1 score']:
-            wr.writerow([domain, measure, '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'All'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Best subset (F1)'])])])
+    wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)', 'Top3 F1', 'Top5 F1', 'Top10 F1'])
+    for domain in domains:
+        for measure in ['Precision', 'Recall', 'F1 score', 'Rules']:
+            wr.writerow([domain, measure, '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'All'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Best subset (F1)'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Top3 F1'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Top5 F1'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Top10 F1'])]) ])
     end_csv(f, output_final_report_csv_filepath)
     
 def elapsed_time(start):
