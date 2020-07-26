@@ -45,7 +45,7 @@ class PatternHandler:
             return False
         return True
     
-    def extract_patterns(self, df, pattern_counter, err_list, dependency_handler):
+    def extract_patterns_ot(self, df, pattern_counter, err_list, dependency_handler):
         cnt = 0
         for _, row in df.iterrows():    
             document = row['content']
@@ -58,7 +58,7 @@ class PatternHandler:
                     if o_word == t_word: continue
                         
                     try: 
-                        extracted_patterns = dependency_handler.extract_patterns(sentence_graph.token2indices, sentence_graph.nodes, sentence_graph.graph, sentence_graph.token2tagdep, o_word, t_word)
+                        extracted_patterns = dependency_handler.extract_patterns(sentence_graph.token2indices, sentence_graph.nodes, sentence_graph.graph, sentence_graph.token2tagdep, o_word, t_word, 'ot')
                         pattern_counter['-'.join([dep_rel for token, pos, dep_rel in extracted_patterns if dep_rel != 'root'])] += 1
                         parse_error = False
                     except: parse_error = True
@@ -67,14 +67,36 @@ class PatternHandler:
                     if cnt % 300 == 0: print('[%04dth] Extracting patterns..' % (cnt))
                     cnt += 1
                     
-    def extract_targets(self, doc, opinion_words, dep_rels, dependency_handler, predicted_targets=[]):
+    def extract_patterns_tt(self, df, pattern_counter, err_list, dependency_handler):
+        cnt = 0
+        for _, row in df.iterrows():    
+            document = row['content']
+            doc = self.nlp(document)
+            for sentence_from_doc in doc.sentences:
+                sentence_graph = DependencyGraph(sentence_from_doc)
+                t_t = [(t1,t2) for t1 in row['targets'] for t2 in row['targets'] if t1!=t2] 
+                for start_word, end_word in t_t:
+                    if self.sentence_contains_token(sentence_graph.word_objects, start_word, end_word) == False: continue
+                    if start_word == end_word: continue
+                        
+                    try: 
+                        extracted_patterns = dependency_handler.extract_patterns(sentence_graph.token2indices, sentence_graph.nodes, sentence_graph.graph, sentence_graph.token2tagdep, start_word, end_word, 'tt')
+                        pattern_counter['-'.join([dep_rel for token, pos, dep_rel in extracted_patterns if dep_rel != 'root'])] += 1
+                        parse_error = False
+                    except: parse_error = True
+                        
+                    err_list.append([row['content'], start_word, end_word, parse_error, row['opinion_words'], row['targets'], row['raw_targets']])
+                    if cnt % 300 == 0: print('[%04dth] Extracting patterns..' % (cnt))
+                    cnt += 1
+                    
+    def extract_targets(self, doc, start_words, dep_rels, dependency_handler, predicted_targets=[]):
         if len(predicted_targets) > 0: 
             targets = predicted_targets
         else:
             targets = set()
             for sentence_from_doc in doc.sentences:
                 sentence_graph = DependencyGraph(sentence_from_doc)
-                targets.update(dependency_handler.extract_targets_using_pattern(sentence_graph.token2indices, sentence_graph.nodes, opinion_words, dep_rels))
+                targets.update(dependency_handler.extract_targets_using_pattern(sentence_graph.token2indices, sentence_graph.nodes, start_words, dep_rels))
 
             targets = list(targets)
             targets = self.leave_noun_only(targets)

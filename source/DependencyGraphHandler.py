@@ -26,16 +26,30 @@ class DependencyGraphHandler:
     def remove_number(self, word):
         return self.number_pattern.sub('', word)
     
-    def extract_patterns(self, token2idx, nodes, graph, token2tagdep, o_word, t_word):
-        entity1, entity2 = o_word, t_word
-        if o_word not in token2idx.keys() and '-' in o_word: 
-            entity1 = self.handle_hyphen_or_compound(o_word, '-', token2idx, nodes)
-        if t_word not in token2idx.keys() and '-' in t_word: 
-            entity2 = self.handle_hyphen_or_compound(t_word, '-', token2idx, nodes)
-        if t_word not in token2idx.keys() and ' ' in t_word: 
-            entity2 = self.handle_hyphen_or_compound(t_word, ' ', token2idx, nodes)
-        if t_word not in token2idx.keys() and bool(re.search(r'\d', t_word)):
-            entity2 = self.remove_number(t_word)
+    def extract_patterns(self, token2idx, nodes, graph, token2tagdep, start_word, end_word, pattern_type):
+        entity1, entity2 = start_word, end_word
+        if pattern_type == 'ot':
+            if start_word not in token2idx.keys() and '-' in start_word: 
+                entity1 = self.handle_hyphen_or_compound(start_word, '-', token2idx, nodes)
+            if end_word not in token2idx.keys() and '-' in end_word: 
+                entity2 = self.handle_hyphen_or_compound(end_word, '-', token2idx, nodes)
+            if end_word not in token2idx.keys() and ' ' in end_word: 
+                entity2 = self.handle_hyphen_or_compound(end_word, ' ', token2idx, nodes)
+            if end_word not in token2idx.keys() and bool(re.search(r'\d', end_word)):
+                entity2 = self.remove_number(end_word)
+        elif pattern_type == 'tt':
+            if start_word not in token2idx.keys() and '-' in start_word: 
+                entity1 = self.handle_hyphen_or_compound(start_word, '-', token2idx, nodes)
+            if start_word not in token2idx.keys() and ' ' in start_word: 
+                entity1 = self.handle_hyphen_or_compound(start_word, ' ', token2idx, nodes)
+            if start_word not in token2idx.keys() and bool(re.search(r'\d', start_word)):
+                entity1 = self.remove_number(start_word)
+            if end_word not in token2idx.keys() and '-' in end_word: 
+                entity2 = self.handle_hyphen_or_compound(end_word, '-', token2idx, nodes)
+            if end_word not in token2idx.keys() and ' ' in end_word: 
+                entity2 = self.handle_hyphen_or_compound(end_word, ' ', token2idx, nodes)
+            if end_word not in token2idx.keys() and bool(re.search(r'\d', end_word)):
+                entity2 = self.remove_number(end_word)
         shortest_path = nx.shortest_path(graph, source=entity1, target=entity2)
                 
         return [token2tagdep[token] for token in shortest_path]

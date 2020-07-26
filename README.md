@@ -73,6 +73,10 @@ nltk.download('averaged_perceptron_tagger')
 #### Type 2 rules (using known targets -> new targets): R31, R32
 > **using known aspects** to extract new aspects. The known aspects are extracted in the previous propagation. For example, specific rules that are instantiations of rule patterns **R31 and R32** are type 2 rules.
 
+##### R31: `T(NN) ~ CONJ <- T(NN)` 
+- Does the player play dvd with **audio** and *video*?
+<img src="assets/R31.png"></img><img src="assets/R31a.png"></img>
+
 ### Annotation
 * O: opinion words
     - POS tags for O: JJ, JJR, JJS
