@@ -2,6 +2,25 @@
 
 ## `source`: Shortest path in a dependency graph
 
+### References
+* Customer review dataset & Sentiment lexicon for customer reviews
+    - Qiu, G., Liu, B., Bu, J., & Chen, C. (2011). Opinion word expansion and target extraction through double propagation. Computational linguistics, 37(1), 9-27.
+    - [Customer review dataset: uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#datasets)
+    - [Customer review dataset parser (csv -> json): chakki-works](https://github.com/chakki-works/chazutsu/blob/7eea1f6b441db62ec76f64da1c041cb931746907/chazutsu/datasets/customer_review.py)
+    - [Sentiment lexicon for customer reviews: uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon)
+
+* Learning syntactic patterns from dependency graphs
+    - Hassan, Mohsen, et al. "Extracting disease-symptom relationships by learning syntactic patterns from dependency graphs." 2015.
+
+* Evaluation measures 
+    - Liu, Q., Gao, Z., Liu, B., & Zhang, Y. (2015, June). Automated rule selection for aspect extraction in opinion mining. In Twenty-Fourth International Joint Conference on Artificial Intelligence.
+
+* Double propagation rules
+    - [NinaTian98369](https://github.com/NinaTian98369/Double-propagation/blob/master/extract_targets_dp_new_final.py)
+    - [opener-project (Java)](https://github.com/opener-project/double-propagation-target-generation/tree/master/src/main/java/org/openerproject/double_propagation2/algorithm/rules)
+    - [opener-project (Java)](https://github.com/opener-project/double-propagation-target-generation/blob/master/src/main/java/org/openerproject/double_propagation2/model/RelationTypes.java)
+
+
 ### Environment
 * Ubuntu 16.04
 * Python 3.7.0
@@ -26,34 +45,21 @@ nltk.download('averaged_perceptron_tagger')
 |  D7  | Wireless router |            877 |          272 |
 |  D8  |     Speaker     |            689 |          388 |
 
-### References
-* Customer review dataset & Sentiment lexicon for customer reviews
-    - Qiu, G., Liu, B., Bu, J., & Chen, C. (2011). Opinion word expansion and target extraction through double propagation. Computational linguistics, 37(1), 9-27.
-    - [Customer review dataset: uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#datasets)
-    - [Customer review dataset parser (csv -> json): chakki-works](https://github.com/chakki-works/chazutsu/blob/7eea1f6b441db62ec76f64da1c041cb931746907/chazutsu/datasets/customer_review.py)
-    - [Sentiment lexicon for customer reviews: uic.edu](https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html#lexicon)
-
-* Learning syntactic patterns from dependency graphs
-    - Hassan, Mohsen, et al. "Extracting disease-symptom relationships by learning syntactic patterns from dependency graphs." 2015.
-
-* Evaluation measures 
-    - Liu, Q., Gao, Z., Liu, B., & Zhang, Y. (2015, June). Automated rule selection for aspect extraction in opinion mining. In Twenty-Fourth International Joint Conference on Artificial Intelligence.
-
 ### Evaluation measures
 * Precision and recall based on multiple occurences
     > In a dataset, an important aspect often occurs many times, e.g., the aspect “picture” occurred 10 times in a set of camera reviews. If any occurrence of “picture” is extracted, then all occur- rences of “picture” are considered extracted, i.e., 10. If none of its occurrences is extracted, it is considered as 10 losses.
     
     - <img src="assets/Mul_Precision,Recall.png"></img><img src="assets/Mul_Precision,Recall2.png"></img>
 
-* Precision and recall based on distinct occurence
+<!--* Precision and recall based on distinct occurence
     > if any occurrence of “picture” is extracted, it is considered as one extrac- tion. If none is extracted, it is considered as one loss.
     
-    - <img src="assets/Dis_Precision,Recall.png"></img><img src="assets/Dis_Precision,Recall2.png"></img>
+    - <img src="assets/Dis_Precision,Recall.png"></img><img src="assets/Dis_Precision,Recall2.png"></img>-->
 
 * F1 score
     - <img src="assets/F1.png"></img>
     
-## `source_archive/source_dp`: Double propagation rules 
+### Double propagation rules 
 
 #### Type 1 rules (given a set of seed opinion words -> new targets): R11, R12
 > using opinion words to extract aspects (based on some dependency relations between them), **given a set of of seed opinion words a priori**. For example, specific rules that are instantiations of rule patterns **R11 and R12** are type 1 rules.
@@ -77,6 +83,15 @@ nltk.download('averaged_perceptron_tagger')
 - Does the player play dvd with **audio** and *video*?
 <img src="assets/R31.png"></img><img src="assets/R31a.png"></img>
 
+##### R32: `T(NN) ~ RELATION1 <- H -> RELATION1 ~ T(NN)`
+- Canon **G3** has a great *lens*.
+<img src="assets/R32.png"></img>
+
+#### Type 3 rules (using known targets and opinions -> new opinions): R21, R22, R41, R42
+> **using known aspects and opinion words** to extract new opinion words. The known aspects are extracted in the previous propagation, and the known opinion words are the given seeds or extracted in the previous propagation. For example, specific rules that are instantiations of rule patterns **R21, R22, R41, and R32** are type 3 rules.
+
+<img src="assets/Type3A.png"></img><img src="assets/Type3B.png"></img>
+
 ### Annotation
 * O: opinion words
     - POS tags for O: JJ, JJR, JJS
@@ -86,12 +101,6 @@ nltk.download('averaged_perceptron_tagger')
 * O|T-Dep: Dependency relation
     - {MR}: mod, pnmod, subj, s, obj, obj2, desc
     - {CONJ}: conj
-
-### References
-* Double propagation rules
-    - [NinaTian98369](https://github.com/NinaTian98369/Double-propagation/blob/master/extract_targets_dp_new_final.py)
-    - [opener-project (Java)](https://github.com/opener-project/double-propagation-target-generation/tree/master/src/main/java/org/openerproject/double_propagation2/algorithm/rules)
-    - [opener-project (Java)](https://github.com/opener-project/double-propagation-target-generation/blob/master/src/main/java/org/openerproject/double_propagation2/model/RelationTypes.java)
 
 <!--
 ## Obsolete
