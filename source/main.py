@@ -218,6 +218,7 @@ def main():
             training_df, test_df = training_dfs[k], test_dfs[k]
         
             # Training
+            whole_patterns = []
             for pattern_type in ['ot', 'tt']:
                 filepath = output_pattern_counter_pkl_filepath % (domain, k, pattern_type)
                 if os.path.exists(filepath): pattern_counter = load_pkl(filepath)
@@ -233,6 +234,7 @@ def main():
                 predicted_targets_df['tp'] = predicted_targets_df.progress_apply(lambda row: calculate_true_positive(row['predicted_targets'], row['targets']), axis=1)
 
                 subset_handler = SubsetHandler(domain, predicted_targets_df, pattern_evaluation_df)
+                whole_patterns.extend(subset_handler.pattern_list)
                 if pattern_type == 'ot': best_subset = [subset_handler.pattern_list[0]]
                 best_subset = pattern_subset_selection(domain, k, pattern_type, best_subset, training_df, subset_handler, pattern_handler, dependency_handler)
 
@@ -240,7 +242,7 @@ def main():
             filepath = output_target_extraction_report_csv_filepath % (domain, k)
             f, wr = start_csv(filepath)
             wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)'])
-            all_pre_mul, all_rec_mul, all_f1_mul, all_f1_dis = evaluate_rule_set(test_df, subset_handler.pattern_list, pattern_handler, dependency_handler)
+            all_pre_mul, all_rec_mul, all_f1_mul, all_f1_dis = evaluate_rule_set(test_df, whole_patterns, pattern_handler, dependency_handler)
             best_pre_mul, best_rec_mul, best_f1_mul, _ = evaluate_rule_set(test_df, best_subset, pattern_handler, dependency_handler)
             
             wr.writerow([domain, 'Precision', '%.4f'%all_pre_mul, '%.4f'%best_pre_mul])
