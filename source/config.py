@@ -17,7 +17,7 @@ base_output_dir = os.path.join(base_dir, 'output')
 output_dir = os.path.join(base_dir, 'output', '20200726-18-15-32')   # datetime.now().strftime("%Y%m%d-%H-%M-%S")
 output_err_dir = os.path.join(output_dir, 'err')
 output_training_dir = os.path.join(output_dir, 'training')
-output_test_dir = os.path.join(output_dir, 'test_count=%d_f1=%d_domain%d'% (args.min_pattern_count, args.min_pattern_f1, len(domains)))
+output_test_dir = os.path.join(output_dir, 'test_count=%d_f1=%.1f_domain%d'% (args.min_pattern_count, args.min_pattern_f1, len(domains)))
 output_save_dir = os.path.join(output_dir, 'save')
 output_targets_dir = os.path.join(output_dir, 'targets')
 
