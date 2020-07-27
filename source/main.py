@@ -237,7 +237,7 @@ def main():
                 whole_patterns.extend(subset_handler.pattern_list)
                 top_3_patterns.extend(subset_handler.pattern_list[:3])
                 top_5_patterns.extend(subset_handler.pattern_list[:5])
-                top_10_patterns.extend(subset_handler.pattern_list[:])
+                top_10_patterns.extend(subset_handler.pattern_list[:10])
                 if pattern_type == 'ot': best_subset = [subset_handler.pattern_list[0]]
                 best_subset = pattern_subset_selection(domain, k, pattern_type, best_subset, training_df, subset_handler, pattern_handler, dependency_handler)
 
