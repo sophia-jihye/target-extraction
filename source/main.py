@@ -15,6 +15,8 @@ from pandarallel import pandarallel
 pandarallel.initialize(nb_workers=parameters.num_cpus, progress_bar=True)
 
 domains = parameters.domains
+pattern_types = parameters.pattern_types
+config_option = parameters.config_option
 min_pattern_count = parameters.min_pattern_count
 min_pattern_f1 = parameters.min_pattern_f1
 
@@ -130,6 +132,17 @@ def evaluate_rule_set(original_df, selected_pattern_list, pattern_handler, depen
     f1_dis = calculate_f1(pre_dis,rec_dis)
     return pre_mul, rec_mul, f1_mul, f1_dis
 
+def evaluate_rule_set_f1(original_df, selected_pattern_list, pattern_handler, dependency_handler):
+    df = copy.deepcopy(original_df)
+    df['predicted_targets'] = df.apply(lambda x: list(), axis=1)
+    for one_flattened_dep_rels in selected_pattern_list:
+        dep_rels = one_flattened_dep_rels.split('-')
+        df['predicted_targets'] = df.apply(lambda x: pattern_handler.extract_targets(x['doc'], x['opinion_words'], dep_rels, dependency_handler, x['predicted_targets']), axis=1)
+
+    pre_mul, rec_mul, pre_dis, rec_dis = calculate_precision_recall(df)
+    f1_mul = calculate_f1(pre_mul,rec_mul)
+    return f1_mul
+
 def pick_least_redundant_one_pattern(selected_pattern_list, subset_handler):
     print('Picking out the least redundant one pattern against %s.. ' % str(selected_pattern_list))
     x1 = subset_handler.evaluate_patterns_tp(selected_pattern_list)['tp'].values.reshape(-1,1)
@@ -138,6 +151,21 @@ def pick_least_redundant_one_pattern(selected_pattern_list, subset_handler):
     redundancy_degree_score_df['redundancy_score'] = redundancy_degree_score_df.parallel_apply(lambda row: mutual_info_classif(x1, subset_handler.evaluate_patterns_tp([*selected_pattern_list, row['candidate_pattern']])['tp'].values.reshape(-1,1), discrete_features=[0]), axis=1)
     
     min_row = redundancy_degree_score_df.sort_values(by='redundancy_score').iloc[0]
+    min_redundant_pattern = min_row['candidate_pattern']
+    min_redundancy_degree_score = min_row['redundancy_score']
+    
+    return min_redundant_pattern, min_redundancy_degree_score
+
+def pick_one_pattern(selected_pattern_list, subset_handler, original_df, pattern_handler, dependency_handler):
+    print('Picking out the least redundant one pattern against %s.. ' % str(selected_pattern_list))
+    x1 = subset_handler.evaluate_patterns_tp(selected_pattern_list)['tp'].values.reshape(-1,1)
+    
+    redundancy_degree_score_df = pd.DataFrame([candidate_pattern for candidate_pattern in subset_handler.pattern_list if candidate_pattern not in selected_pattern_list], columns=['candidate_pattern'])
+    redundancy_degree_score_df['redundancy_score'] = redundancy_degree_score_df.parallel_apply(lambda row: mutual_info_classif(x1, subset_handler.evaluate_patterns_tp([*selected_pattern_list, row['candidate_pattern']])['tp'].values.reshape(-1,1), discrete_features=[0]), axis=1)
+    redundancy_degree_score_df['f1'] = redundancy_degree_score_df.progress_apply(lambda x: evaluate_rule_set_f1(original_df, [*selected_pattern_list, row['candidate_pattern']], pattern_handler, dependency_handler), axis=1)
+    redundancy_degree_score_df['f1/mi'] = redundancy_degree_score_df.progress_apply(lambda x: x['f1']/x['redundancy_score'], axis=1)
+    
+    min_row = redundancy_degree_score_df.sort_values(by='f1/mi', ascending=False).iloc[0]
     min_redundant_pattern = min_row['candidate_pattern']
     min_redundancy_degree_score = min_row['redundancy_score']
     
@@ -156,7 +184,10 @@ def pattern_subset_selection(domain, k, pattern_type, selected_pattern_list, ori
         while True:
             best_f1_mul, best_f1_dis, best_subset = f1_mul, f1_dis, copy.deepcopy(selected_pattern_list)
 
-            min_redundant_pattern, mi_score = pick_least_redundant_one_pattern(selected_pattern_list, subset_handler)
+            if config_option == 'f1mi':
+                min_redundant_pattern, mi_score = pick_one_pattern(selected_pattern_list, subset_handler, original_df, pattern_handler, dependency_handler)
+            else:
+                min_redundant_pattern, mi_score = pick_least_redundant_one_pattern(selected_pattern_list, subset_handler)
             content += "\nLeast redundant pattern = %s [Redundancy score (MI score) = %.4f]" % (min_redundant_pattern, mi_score)
             print("[%s]Least redundant pattern = %s [Redundancy score (MI score) = %.4f]" % (domain, min_redundant_pattern, mi_score))
             selected_pattern_list.append(min_redundant_pattern)
@@ -219,7 +250,7 @@ def main():
         
             # Training
             whole_patterns, top_3_patterns, top_5_patterns, top_10_patterns = [], [], [], []
-            for pattern_type in ['ot']:   # , 'tt'
+            for pattern_type in pattern_types:  
                 filepath = output_pattern_counter_pkl_filepath % (domain, k, pattern_type)
                 if os.path.exists(filepath): pattern_counter = load_pkl(filepath)
                 else: 
