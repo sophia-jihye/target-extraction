@@ -220,7 +220,6 @@ def pattern_subset_selection(domain, k, pattern_type, selected_pattern_list, ori
             print("[%s]Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(selected_pattern_list), f1_mul, f1_dis))
 
             if len(selected_pattern_list) == len(subset_handler.pattern_list): break
-            if picked_cnt == max_pick_count: break
             if max_pick_count != 0 and picked_cnt == max_pick_count: break
             if max_pick_count == 0 and f1_mul < best_f1_mul: 
                 num_decreased += 1

@@ -90,16 +90,14 @@ class PatternHandler:
                     cnt += 1
                     
     def extract_targets(self, doc, start_words, dep_rels, dependency_handler, predicted_targets=[]):
-        if len(predicted_targets) > 0: 
-            targets = predicted_targets
-        else:
-            targets = set()
-            for sentence_from_doc in doc.sentences:
-                sentence_graph = DependencyGraph(sentence_from_doc)
-                targets.update(dependency_handler.extract_targets_using_pattern(sentence_graph.token2indices, sentence_graph.nodes, start_words, dep_rels))
+        targets = set()
+        for sentence_from_doc in doc.sentences:
+            sentence_graph = DependencyGraph(sentence_from_doc)
+            targets.update(dependency_handler.extract_targets_using_pattern(sentence_graph.token2indices, sentence_graph.nodes, start_words, dep_rels))
 
-            targets = list(targets)
-            targets = self.leave_noun_only(targets)
+        targets = list(targets)
+        targets = self.leave_noun_only(targets)
+        targets.extend(predicted_targets)
         return list(set(targets))
     
     def extract_targets_dp(self, double_propagation, doc, opinion_words, predicted_targets=[]):
