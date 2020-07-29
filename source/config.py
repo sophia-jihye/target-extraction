@@ -4,13 +4,16 @@ import multiprocessing as mp
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--config_option', type=str, default='') # 'f1mi'
+parser.add_argument('--allow_f1_decrease_count', type=int, default=0)
+parser.add_argument('--config_option', type=str, default='') # 'f1mi', 'premi'
 parser.add_argument('--min_pattern_count', type=int, default=0)
+parser.add_argument('--max_pick_count', type=int, default=0)
+
 parser.add_argument('--min_pattern_f1', type=float, default=0.0)
 args = parser.parse_args()
 
 domains = ['Cell phone']   
-pattern_types = ['ot', 'tt']
+pattern_types = ['ot']   # , 'tt'
 #domains = ['Cell phone', 'MP3 player', 'DVD player', 'Digital camera1', 'Digital camera2', 'Computer', 'Wireless router', 'Speaker']
 
 # system configuration
@@ -19,7 +22,7 @@ base_output_dir = os.path.join(base_dir, 'output')
 output_dir = os.path.join(base_dir, 'output', '20200726-18-15-32')   # datetime.now().strftime("%Y%m%d-%H-%M-%S")
 output_err_dir = os.path.join(output_dir, 'err')
 output_training_dir = os.path.join(output_dir, 'training')
-output_test_dir = os.path.join(output_dir, 'test_%s_%s_count=%d_%s'% ('-'.join(domains), '-'.join(pattern_types), args.min_pattern_count, args.config_option))
+output_test_dir = os.path.join(output_dir, 'test_%s_mpc=%d_%s_pick%d_dec%d'% ('-'.join(domains), args.min_pattern_count, args.config_option, args.max_pick_count, args.allow_f1_decrease_count))
 output_save_dir = os.path.join(output_dir, 'save')
 output_targets_dir = os.path.join(output_dir, 'targets')
 
@@ -33,8 +36,10 @@ for directory in dirs:
 
 class Parameters:
     def __init__(self):
+        self.allow_f1_decrease_count = args.allow_f1_decrease_count
         self.config_option = args.config_option
         self.min_pattern_count = args.min_pattern_count
+        self.max_pick_count = args.max_pick_count
         self.min_pattern_f1 = args.min_pattern_f1
         self.domains = domains
         self.pattern_types = pattern_types

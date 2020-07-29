@@ -16,8 +16,10 @@ pandarallel.initialize(nb_workers=parameters.num_cpus, progress_bar=True)
 
 domains = parameters.domains
 pattern_types = parameters.pattern_types
+allow_f1_decrease_count = parameters.allow_f1_decrease_count
 config_option = parameters.config_option
 min_pattern_count = parameters.min_pattern_count
+max_pick_count = parameters.max_pick_count
 min_pattern_f1 = parameters.min_pattern_f1
 
 data_filepath = parameters.data_filepath
@@ -143,6 +145,17 @@ def evaluate_rule_set_f1(original_df, selected_pattern_list, pattern_handler, de
     f1_mul = calculate_f1(pre_mul,rec_mul)
     return f1_mul
 
+def evaluate_rule_set_pre(original_df, selected_pattern_list, pattern_handler, dependency_handler):
+    df = copy.deepcopy(original_df)
+    df['predicted_targets'] = df.apply(lambda x: list(), axis=1)
+    for one_flattened_dep_rels in selected_pattern_list:
+        dep_rels = one_flattened_dep_rels.split('-')
+        df['predicted_targets'] = df.apply(lambda x: pattern_handler.extract_targets(x['doc'], x['opinion_words'], dep_rels, dependency_handler, x['predicted_targets']), axis=1)
+
+    pre_mul, rec_mul, pre_dis, rec_dis = calculate_precision_recall(df)
+    f1_mul = calculate_f1(pre_mul,rec_mul)
+    return pre_mul
+
 def pick_least_redundant_one_pattern(selected_pattern_list, subset_handler):
     print('Picking out the least redundant one pattern against %s.. ' % str(selected_pattern_list))
     x1 = subset_handler.evaluate_patterns_tp(selected_pattern_list)['tp'].values.reshape(-1,1)
@@ -156,16 +169,21 @@ def pick_least_redundant_one_pattern(selected_pattern_list, subset_handler):
     
     return min_redundant_pattern, min_redundancy_degree_score
 
-def pick_one_pattern(selected_pattern_list, subset_handler, original_df, pattern_handler, dependency_handler):
+def pick_one_pattern(selected_pattern_list, subset_handler, original_df, pattern_handler, dependency_handler, config_option):
     print('Picking out the least redundant one pattern against %s.. ' % str(selected_pattern_list))
     x1 = subset_handler.evaluate_patterns_tp(selected_pattern_list)['tp'].values.reshape(-1,1)
     
     redundancy_degree_score_df = pd.DataFrame([candidate_pattern for candidate_pattern in subset_handler.pattern_list if candidate_pattern not in selected_pattern_list], columns=['candidate_pattern'])
     redundancy_degree_score_df['redundancy_score'] = redundancy_degree_score_df.parallel_apply(lambda row: mutual_info_classif(x1, subset_handler.evaluate_patterns_tp([*selected_pattern_list, row['candidate_pattern']])['tp'].values.reshape(-1,1), discrete_features=[0]), axis=1)
-    redundancy_degree_score_df['f1'] = redundancy_degree_score_df.progress_apply(lambda x: evaluate_rule_set_f1(original_df, [*selected_pattern_list, row['candidate_pattern']], pattern_handler, dependency_handler), axis=1)
-    redundancy_degree_score_df['f1/mi'] = redundancy_degree_score_df.progress_apply(lambda x: x['f1']/x['redundancy_score'], axis=1)
     
-    min_row = redundancy_degree_score_df.sort_values(by='f1/mi', ascending=False).iloc[0]
+    if config_option == 'f1mi':
+        redundancy_degree_score_df['criteria'] = redundancy_degree_score_df.progress_apply(lambda row: evaluate_rule_set_f1(original_df, [*selected_pattern_list, row['candidate_pattern']], pattern_handler, dependency_handler), axis=1)
+    elif config_option == 'premi':
+        redundancy_degree_score_df['f1'] = redundancy_degree_score_df.progress_apply(lambda row: evaluate_rule_set_pre(original_df, [*selected_pattern_list, row['candidate_pattern']], pattern_handler, dependency_handler), axis=1)
+    
+    redundancy_degree_score_df['criteria/mi'] = redundancy_degree_score_df.progress_apply(lambda x: x['criteria']/x['redundancy_score'], axis=1)
+    min_row = redundancy_degree_score_df.sort_values(by='criteria/mi', ascending=False).iloc[0]
+    
     min_redundant_pattern = min_row['candidate_pattern']
     min_redundancy_degree_score = min_row['redundancy_score']
     
@@ -175,17 +193,23 @@ def pattern_subset_selection(domain, k, pattern_type, selected_pattern_list, ori
     print('Processing subset selection for [%s k=%d]..' % (domain, k))
     
     pkl_filepath = output_subset_pkl_filepath % (domain, k, pattern_type)
-    if os.path.exists(pkl_filepath): best_subset = load_pkl(pkl_filepath)
+    if 1==2: print('pass') # os.path.exists(pkl_filepath): best_subset = load_pkl(pkl_filepath)
     else:
+        best_f1_mul_list, best_f1_dis_list, best_subset_list = [], [], []
         best_f1_mul, best_f1_dis, best_subset = 0, 0, []
         _, _, f1_mul, f1_dis = evaluate_rule_set(original_df, selected_pattern_list, pattern_handler, dependency_handler)
         content = "Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (str(selected_pattern_list), f1_mul, f1_dis)
         print("[%s]Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(selected_pattern_list), f1_mul, f1_dis))
+        picked_cnt, num_decreased = 0, 0
         while True:
             best_f1_mul, best_f1_dis, best_subset = f1_mul, f1_dis, copy.deepcopy(selected_pattern_list)
+            best_f1_mul_list.append(best_f1_mul)
+            best_f1_dis_list.append(best_f1_dis)
+            best_subset_list.append(best_subset)
+            picked_cnt += 1
 
-            if config_option == 'f1mi':
-                min_redundant_pattern, mi_score = pick_one_pattern(selected_pattern_list, subset_handler, original_df, pattern_handler, dependency_handler)
+            if config_option != '':
+                min_redundant_pattern, mi_score = pick_one_pattern(selected_pattern_list, subset_handler, original_df, pattern_handler, dependency_handler, config_option)
             else:
                 min_redundant_pattern, mi_score = pick_least_redundant_one_pattern(selected_pattern_list, subset_handler)
             content += "\nLeast redundant pattern = %s [Redundancy score (MI score) = %.4f]" % (min_redundant_pattern, mi_score)
@@ -196,8 +220,24 @@ def pattern_subset_selection(domain, k, pattern_type, selected_pattern_list, ori
             print("[%s]Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(selected_pattern_list), f1_mul, f1_dis))
 
             if len(selected_pattern_list) == len(subset_handler.pattern_list): break
-            if f1_mul < best_f1_mul: break
+            if picked_cnt == max_pick_count: break
+            if max_pick_count != 0 and picked_cnt == max_pick_count: break
+            if max_pick_count == 0 and f1_mul < best_f1_mul: 
+                num_decreased += 1
+                if num_decreased > allow_f1_decrease_count:
+                    break
+            if max_pick_count == 0 and f1_mul >= best_f1_mul:
+                num_decreased = 0
 
+        if allow_f1_decrease_count > 0:
+            idx = 1 + allow_f1_decrease_count
+            best_f1_mul = best_f1_mul_list[-idx]
+            best_f1_dis = best_f1_dis_list[-idx]
+            best_subset = best_subset_list[-idx]
+        else:
+            best_f1_mul = best_f1_mul_list[-1]
+            best_f1_dis = best_f1_dis_list[-1]
+            best_subset = best_subset_list[-1]
         content += "\n\n<Best> Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (str(best_subset), best_f1_mul, best_f1_dis)
         print("[%s]<Best> Selected pattern list = %s \n\tF1 (multiple): %.4f\tF1 (distinct): %.4f" % (domain, str(best_subset), best_f1_mul, best_f1_dis))
         
@@ -249,7 +289,7 @@ def main():
             training_df, test_df = training_dfs[k], test_dfs[k]
         
             # Training
-            whole_patterns, top_3_patterns, top_5_patterns, top_10_patterns = [], [], [], []
+            whole_patterns, top_k_patterns = [], []
             for pattern_type in pattern_types:  
                 filepath = output_pattern_counter_pkl_filepath % (domain, k, pattern_type)
                 if os.path.exists(filepath): pattern_counter = load_pkl(filepath)
@@ -266,58 +306,46 @@ def main():
 
                 subset_handler = SubsetHandler(domain, predicted_targets_df, pattern_evaluation_df)
                 whole_patterns.extend(subset_handler.pattern_list)
-                top_3_patterns.extend(subset_handler.pattern_list[:3])
-                top_5_patterns.extend(subset_handler.pattern_list[:5])
-                top_10_patterns.extend(subset_handler.pattern_list[:10])
+                top_k_patterns.extend(subset_handler.pattern_list[:max_pick_count])
                 if pattern_type == 'ot': best_subset = [subset_handler.pattern_list[0]]
                 best_subset = pattern_subset_selection(domain, k, pattern_type, best_subset, training_df, subset_handler, pattern_handler, dependency_handler)
 
             # Test
             filepath = output_target_extraction_report_csv_filepath % (domain, k)
             f, wr = start_csv(filepath)
-            wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)', 'Top3 F1', 'Top5 F1', 'Top10 F1'])
+            wr.writerow(['Domain', 'Measure', 'All', 'Best subset', 'Topk F1'])
             
             all_pre_mul, all_rec_mul, all_f1_mul, all_f1_dis = evaluate_rule_set(test_df, whole_patterns, pattern_handler, dependency_handler)
             best_pre_mul, best_rec_mul, best_f1_mul, _ = evaluate_rule_set(test_df, best_subset, pattern_handler, dependency_handler)
-            top3_pre_mul, top3_rec_mul, top3_f1_mul, top3_f1_dis = evaluate_rule_set(test_df, top_3_patterns, pattern_handler, dependency_handler)
-            top5_pre_mul, top5_rec_mul, top5_f1_mul, top5_f1_dis = evaluate_rule_set(test_df, top_5_patterns, pattern_handler, dependency_handler)
-            top10_pre_mul, top10_rec_mul, top10_f1_mul, top10_f1_dis = evaluate_rule_set(test_df, top_10_patterns, pattern_handler, dependency_handler)
+            topk_pre_mul, topk_rec_mul, topk_f1_mul, topk_f1_dis = evaluate_rule_set(test_df, top_k_patterns, pattern_handler, dependency_handler)
             
-            wr.writerow([domain, 'Precision', '%.4f'%all_pre_mul, '%.4f'%best_pre_mul, '%.4f'%top3_pre_mul, '%.4f'%top5_pre_mul, '%.4f'%top10_pre_mul])
-            wr.writerow([domain, 'Recall', '%.4f'%all_rec_mul, '%.4f'%best_rec_mul, '%.4f'%top3_rec_mul, '%.4f'%top5_rec_mul, '%.4f'%top10_rec_mul])
-            wr.writerow([domain, 'F1 score', '%.4f'%all_f1_mul, '%.4f'%best_f1_mul, '%.4f'%top3_f1_mul, '%.4f'%top5_f1_mul, '%.4f'%top10_f1_mul])
-            wr.writerow([domain, 'Rules', '%d'%len(whole_patterns), '%s'%str(best_subset), '%s'%str(top_3_patterns), '%s'%str(top_5_patterns), '%s'%str(top_10_patterns)])
+            wr.writerow([domain, 'Precision', '%.4f'%all_pre_mul, '%.4f'%best_pre_mul, '%.4f'%topk_pre_mul])
+            wr.writerow([domain, 'Recall', '%.4f'%all_rec_mul, '%.4f'%best_rec_mul, '%.4f'%topk_rec_mul])
+            wr.writerow([domain, 'F1 score', '%.4f'%all_f1_mul, '%.4f'%best_f1_mul, '%.4f'%topk_f1_mul])
+            wr.writerow([domain, 'Rules', '%d'%len(whole_patterns), '%s'%str(best_subset), '%s'%str(top_k_patterns)])
             
             kfold_results['_'.join([domain, 'Precision', 'All'])].append(all_pre_mul)
-            kfold_results['_'.join([domain, 'Precision', 'Best subset (F1)'])].append(best_pre_mul)
-            kfold_results['_'.join([domain, 'Precision', 'Top3 F1'])].append(top3_pre_mul)
-            kfold_results['_'.join([domain, 'Precision', 'Top5 F1'])].append(top5_pre_mul)
-            kfold_results['_'.join([domain, 'Precision', 'Top10 F1'])].append(top10_pre_mul)
+            kfold_results['_'.join([domain, 'Precision', 'Best subset'])].append(best_pre_mul)
+            kfold_results['_'.join([domain, 'Precision', 'Topk F1'])].append(topk_pre_mul)
             
             kfold_results['_'.join([domain, 'Recall', 'All'])].append(all_rec_mul)
-            kfold_results['_'.join([domain, 'Recall', 'Best subset (F1)'])].append(best_rec_mul)
-            kfold_results['_'.join([domain, 'Recall', 'Top3 F1'])].append(top3_rec_mul)
-            kfold_results['_'.join([domain, 'Recall', 'Top5 F1'])].append(top5_rec_mul)
-            kfold_results['_'.join([domain, 'Recall', 'Top10 F1'])].append(top10_rec_mul)
+            kfold_results['_'.join([domain, 'Recall', 'Best subset'])].append(best_rec_mul)
+            kfold_results['_'.join([domain, 'Recall', 'Topk F1'])].append(topk_rec_mul)
             
             kfold_results['_'.join([domain, 'F1 score', 'All'])].append(all_f1_mul)
-            kfold_results['_'.join([domain, 'F1 score', 'Best subset (F1)'])].append(best_f1_mul)
-            kfold_results['_'.join([domain, 'F1 score', 'Top3 F1'])].append(top3_f1_mul)
-            kfold_results['_'.join([domain, 'F1 score', 'Top5 F1'])].append(top5_f1_mul)
-            kfold_results['_'.join([domain, 'F1 score', 'Top10 F1'])].append(top10_f1_mul)
+            kfold_results['_'.join([domain, 'F1 score', 'Best subset'])].append(best_f1_mul)
+            kfold_results['_'.join([domain, 'F1 score', 'Topk F1'])].append(topk_f1_mul)
             
             kfold_results['_'.join([domain, 'Rules', 'All'])].append(len(whole_patterns))
-            kfold_results['_'.join([domain, 'Rules', 'Best subset (F1)'])].append(len(best_subset))
-            kfold_results['_'.join([domain, 'Rules', 'Top3 F1'])].append(len(top_3_patterns))
-            kfold_results['_'.join([domain, 'Rules', 'Top5 F1'])].append(len(top_5_patterns))
-            kfold_results['_'.join([domain, 'Rules', 'Top10 F1'])].append(len(top_10_patterns))
+            kfold_results['_'.join([domain, 'Rules', 'Best subset'])].append(len(best_subset))
+            kfold_results['_'.join([domain, 'Rules', 'Topk F1'])].append(len(top_k_patterns))
             end_csv(f, filepath)
     
     f, wr = start_csv(output_final_report_csv_filepath)
-    wr.writerow(['Domain', 'Measure', 'All', 'Best subset (F1)', 'Top3 F1', 'Top5 F1', 'Top10 F1'])
+    wr.writerow(['Domain', 'Measure', 'All', 'Best subset', 'Topk F1'])
     for domain in domains:
         for measure in ['Precision', 'Recall', 'F1 score', 'Rules']:
-            wr.writerow([domain, measure, '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'All'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Best subset (F1)'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Top3 F1'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Top5 F1'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Top10 F1'])]) ])
+            wr.writerow([domain, measure, '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'All'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Best subset'])]), '%.4f'%np.mean(kfold_results['_'.join([domain, measure, 'Topk F1'])]) ])
     end_csv(f, output_final_report_csv_filepath)
     
 def elapsed_time(start):
