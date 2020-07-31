@@ -4,15 +4,15 @@ import multiprocessing as mp
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--allow_f1_decrease_count', type=int, default=0)
+parser.add_argument('--max_pick_count', type=int, default=0)
 parser.add_argument('--config_option', type=str, default='') # 'f1mi', 'premi'
 parser.add_argument('--min_pattern_count', type=int, default=0)
-parser.add_argument('--max_pick_count', type=int, default=0)
-
 parser.add_argument('--min_pattern_f1', type=float, default=0.0)
+
+parser.add_argument('--allow_f1_decrease_count', type=int, default=0)
 args = parser.parse_args()
 
-domains = ['Cell phone']   
+domains = ['MP3 player']   
 pattern_types = ['ot']   # , 'tt'
 #domains = ['Cell phone', 'MP3 player', 'DVD player', 'Digital camera1', 'Digital camera2', 'Computer', 'Wireless router', 'Speaker']
 
@@ -22,7 +22,7 @@ base_output_dir = os.path.join(base_dir, 'output')
 output_dir = os.path.join(base_dir, 'output', '20200726-18-15-32')   # datetime.now().strftime("%Y%m%d-%H-%M-%S")
 output_err_dir = os.path.join(output_dir, 'err')
 output_training_dir = os.path.join(output_dir, 'training')
-output_test_dir = os.path.join(output_dir, 'test_%s_mpc=%d_%s_pick%d_dec%d'% ('-'.join(domains), args.min_pattern_count, args.config_option, args.max_pick_count, args.allow_f1_decrease_count))
+output_test_dir = os.path.join(output_dir, 'test_%s_%s_pick%d_mpc=%d_f=%.1f'% ('-'.join(domains), args.config_option, args.max_pick_count, args.min_pattern_count, args.min_pattern_f1))
 output_save_dir = os.path.join(output_dir, 'save')
 output_targets_dir = os.path.join(output_dir, 'targets')
 
