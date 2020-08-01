@@ -50,7 +50,7 @@ class Parameters:
         self.output_targets_dir = output_targets_dir
         self.output_test_dir = output_test_dir
         self.parameters_json_filepath = parameters_json_filepath
-        self.output_time_txt_filepath = os.path.join(output_dir, 'elapsed_time.txt')
+        self.output_time_txt_filepath = os.path.join(output_test_dir, 'elapsed_time.txt')
         self.errlog_filepath = os.path.join(output_err_dir, '%s.log' % (datetime.now().strftime("%Y%m%d-%H-%M-%S")))
         self.output_raw_df_pkl_filepath = os.path.join(output_save_dir, '[%s]raw_df.pkl')
         self.output_training_test_dfs_pkl_filepath = os.path.join(output_save_dir, '[%s]training_test_dfs.pkl')
