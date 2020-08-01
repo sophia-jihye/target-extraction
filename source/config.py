@@ -12,7 +12,7 @@ parser.add_argument('--min_pattern_f1', type=float, default=0.0)
 parser.add_argument('--allow_f1_decrease_count', type=int, default=0)
 args = parser.parse_args()
 
-domains = ['MP3 player']   
+domains = ['DVD player']   
 pattern_types = ['ot']   # , 'tt'
 #domains = ['Cell phone', 'MP3 player', 'DVD player', 'Digital camera1', 'Digital camera2', 'Computer', 'Wireless router', 'Speaker']
 

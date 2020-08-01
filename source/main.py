@@ -177,9 +177,9 @@ def pick_one_pattern(selected_pattern_list, subset_handler, original_df, pattern
     redundancy_degree_score_df['redundancy_score'] = redundancy_degree_score_df.parallel_apply(lambda row: mutual_info_classif(x1, subset_handler.evaluate_patterns_tp([*selected_pattern_list, row['candidate_pattern']])['tp'].values.reshape(-1,1), discrete_features=[0]), axis=1)
     
     if config_option == 'f1mi':
-        redundancy_degree_score_df['criteria'] = redundancy_degree_score_df.progress_apply(lambda row: evaluate_rule_set_f1(original_df, [*selected_pattern_list, row['candidate_pattern']], pattern_handler, dependency_handler), axis=1)
+        redundancy_degree_score_df['criteria'] = redundancy_degree_score_df.parallel_apply(lambda row: evaluate_rule_set_f1(original_df, [*selected_pattern_list, row['candidate_pattern']], pattern_handler, dependency_handler), axis=1)
     elif config_option == 'premi':
-        redundancy_degree_score_df['f1'] = redundancy_degree_score_df.progress_apply(lambda row: evaluate_rule_set_pre(original_df, [*selected_pattern_list, row['candidate_pattern']], pattern_handler, dependency_handler), axis=1)
+        redundancy_degree_score_df['criteria'] = redundancy_degree_score_df.parallel_apply(lambda row: evaluate_rule_set_pre(original_df, [*selected_pattern_list, row['candidate_pattern']], pattern_handler, dependency_handler), axis=1)
     
     redundancy_degree_score_df['criteria/mi'] = redundancy_degree_score_df.progress_apply(lambda x: x['criteria']/x['redundancy_score'], axis=1)
     min_row = redundancy_degree_score_df.sort_values(by='criteria/mi', ascending=False).iloc[0]
