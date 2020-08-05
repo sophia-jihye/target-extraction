@@ -12,14 +12,14 @@ parser.add_argument('--min_pattern_f1', type=float, default=0.0)
 parser.add_argument('--allow_f1_decrease_count', type=int, default=0)
 args = parser.parse_args()
 
-domains = ['DVD player']   
+domains = ['Digital camera']   
 pattern_types = ['ot']   # , 'tt'
-#domains = ['Cell phone', 'MP3 player', 'DVD player', 'Digital camera1', 'Digital camera2', 'Computer', 'Wireless router', 'Speaker']
+#domains = ['Digital camera1', 'Digital camera2', 'Cell phone', 'MP3 player', 'DVD player', 'Computer', 'Wireless router', 'Speaker']
 
 # system configuration
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 base_output_dir = os.path.join(base_dir, 'output')
-output_dir = os.path.join(base_dir, 'output', '20200726-18-15-32')   # datetime.now().strftime("%Y%m%d-%H-%M-%S")
+output_dir = os.path.join(base_dir, 'output', datetime.now().strftime("%Y%m%d-%H-%M-%S"))   # '20200726-18-15-32'
 output_err_dir = os.path.join(output_dir, 'err')
 output_training_dir = os.path.join(output_dir, 'training')
 output_test_dir = os.path.join(output_dir, 'test_%s_%s_pick%d_mpc=%d_f=%.1f'% ('-'.join(domains), args.config_option, args.max_pick_count, args.min_pattern_count, args.min_pattern_f1))
@@ -44,7 +44,7 @@ class Parameters:
         self.domains = domains
         self.pattern_types = pattern_types
         self.base_dir = base_dir
-        self.data_filepath = os.path.join(base_dir, 'data', 'parsed', 'five-three_5995.json')
+        self.data_filepath = os.path.join(base_dir, 'data', 'parsed', 'five_3903.json') 
         self.lexicon_filepath = os.path.join(base_dir, 'data', 'parsed', 'lexicon_6788.json')
         self.output_dir = output_dir
         self.output_targets_dir = output_targets_dir
