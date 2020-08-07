@@ -19,7 +19,7 @@ pattern_types = ['ot']   # , 'tt'
 # system configuration
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 base_output_dir = os.path.join(base_dir, 'output')
-output_dir = os.path.join(base_dir, 'output', datetime.now().strftime("%Y%m%d-%H-%M-%S"))   # '20200726-18-15-32'
+output_dir = os.path.join(base_dir, 'output', '20200805-13-24-52')   # datetime.now().strftime("%Y%m%d-%H-%M-%S")
 output_err_dir = os.path.join(output_dir, 'err')
 output_training_dir = os.path.join(output_dir, 'training')
 output_test_dir = os.path.join(output_dir, 'test_%s_%s_pick%d_mpc=%d_f=%.1f'% ('-'.join(domains), args.config_option, args.max_pick_count, args.min_pattern_count, args.min_pattern_f1))
